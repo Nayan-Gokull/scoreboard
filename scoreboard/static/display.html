@@ -983,7 +983,7 @@ async function fetchSelfies(){
     // fill all empty slots immediately
     for(let i=0;i<SW_SLOTS;i++){
       const slot=document.getElementById('sw-'+i);
-      if(slot){const img=slot.querySelector('img');if(img&&!img.src&&_swUrls[i])swSetSlot(i,_swUrls[i]);}
+      if(slot){const img=slot.querySelector('img');if(img&&!img.getAttribute('data-url')&&_swUrls[i])swSetSlot(i,_swUrls[i]);}
     }
   }catch(_){}
 }
