@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime data — machine-specific, never commit
+scoreboard/state.json
+scoreboard/config.json
+scoreboard/players.json
+scoreboard/fixtures.json
+scoreboard/games/
+scoreboard/media/
+
+# Users file contains password hashes — never commit
+scoreboard/users.json
+
+# Server secrets
+scoreboard/.cookie_secret
+
+# Claude Code session data
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Fan Vote</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#f5c842;--bg:#07070d;--sur:#0f0f1c;--bd:rgba(255,255,255,.09);--txt:#eeeef8;--dim:rgba(255,255,255,.38);}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
+body{background:radial-gradient(ellipse 120% 80% at 50% 0%,#111128 0%,#07070d 70%);}
+
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;text-align:center;}
+.screen.on{display:flex;}
+
+/* Loading */
+.spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Badge */
+.badge{display:inline-block;background:var(--gold);color:#06060f;font-size:.6rem;font-weight:800;letter-spacing:.26em;text-transform:uppercase;padding:5px 16px;border-radius:2px;margin-bottom:24px;}
+
+/* Vote screen */
+.question{font-size:clamp(1.35rem,5.5vw,2rem);font-weight:700;line-height:1.25;max-width:460px;margin-bottom:30px;letter-spacing:-.01em;}
+.opts{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px;}
+.opt-btn{
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1);
+  color:var(--txt);
+  font-size:1rem;
+  font-weight:600;
+  padding:17px 22px;
+  border-radius:11px;
+  cursor:pointer;
+  text-align:left;
+  transition:background .15s,border-color .15s,transform .1s;
+  letter-spacing:.01em;
+  line-height:1.3;
+}
+.opt-btn:active{transform:scale(.98);}
+.opt-btn:hover:not(:disabled){background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.22);}
+.opt-btn.selected{background:rgba(245,200,66,.16);border-color:var(--gold);color:var(--gold);}
+.opt-btn:disabled{opacity:.55;cursor:default;}
+
+/* Thanks screen */
+.thanks-icon{font-size:2.8rem;margin-bottom:14px;}
+.thanks-head{font-size:1.4rem;font-weight:700;margin-bottom:6px;}
+.thanks-sub{font-size:.9rem;color:var(--dim);margin-bottom:26px;}
+.total-votes{font-size:.72rem;color:rgba(255,255,255,.25);letter-spacing:.14em;text-transform:uppercase;margin-bottom:18px;}
+.res-wrap{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;}
+.res-row{}
+.res-lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:.92rem;font-weight:600;margin-bottom:5px;}
+.res-opt{flex:1;text-align:left;padding-right:10px;line-height:1.3;}
+.res-pct{color:var(--gold);font-weight:700;font-size:.85rem;white-space:nowrap;}
+.res-count{color:var(--dim);font-size:.75rem;font-weight:400;margin-left:4px;}
+.res-track{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;}
+.res-fill{height:100%;background:linear-gradient(90deg,#f5c842,#f97316);border-radius:3px;width:0%;transition:width .6s cubic-bezier(.22,1,.36,1);}
+
+/* Closed screen */
+.closed-icon{font-size:3rem;margin-bottom:18px;opacity:.6;}
+.closed-head{font-size:1.2rem;font-weight:700;margin-bottom:8px;}
+.closed-sub{font-size:.88rem;color:var(--dim);}
+</style>
+</head>
+<body>
+
+<div class="screen on" id="s-loading">
+  <div class="spinner"></div>
+  <div style="color:var(--dim);font-size:.88rem;letter-spacing:.06em;">Loading…</div>
+</div>
+
+<div class="screen" id="s-vote">
+  <div class="badge">LIVE VOTE</div>
+  <div class="question" id="q-text"></div>
+  <div class="opts" id="opts-list"></div>
+</div>
+
+<div class="screen" id="s-thanks">
+  <div class="badge">VOTE RECORDED</div>
+  <div class="thanks-icon">🎉</div>
+  <div class="thanks-head">Thanks for voting!</div>
+  <div class="thanks-sub">Here's how the crowd voted:</div>
+  <div class="total-votes" id="total-votes-lbl"></div>
+  <div class="res-wrap" id="res-list"></div>
+</div>
+
+<div class="screen" id="s-closed">
+  <div class="closed-icon">🔒</div>
+  <div class="closed-head">Voting isn't open yet</div>
+  <div class="closed-sub">Keep an eye on the big screen!</div>
+</div>
+
+<script>
+let pollData = null;
+
+function show(id) {
+  ['s-loading','s-vote','s-thanks','s-closed'].forEach(s => {
+    document.getElementById(s).classList.toggle('on', s === id);
+  });
+}
+
+function renderResults(data) {
+  const votes = data.votes || {};
+  const total = Object.values(votes).reduce((a, b) => a + Number(b), 0);
+  const lbl = document.getElementById('total-votes-lbl');
+  if (lbl) lbl.textContent = total === 0 ? '' : `${total} vote${total !== 1 ? 's' : ''} total`;
+  const wrap = document.getElementById('res-list');
+  wrap.innerHTML = data.options.map((opt, i) => {
+    const v = Number(votes[String(i)] || 0);
+    const pct = total > 0 ? Math.round(v / total * 100) : 0;
+    return `<div class="res-row">
+      <div class="res-lbl">
+        <span class="res-opt">${opt}</span>
+        <span class="res-pct">${pct}%<span class="res-count">${v} vote${v !== 1 ? 's' : ''}</span></span>
+      </div>
+      <div class="res-track"><div class="res-fill" data-w="${pct}"></div></div>
+    </div>`;
+  }).join('');
+  // trigger CSS transition after paint
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    wrap.querySelectorAll('.res-fill').forEach(el => {
+      el.style.width = el.getAttribute('data-w') + '%';
+    });
+  }));
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/poll/data', { cache: 'no-store' });
+    if (!r.ok) throw new Error();
+    pollData = await r.json();
+  } catch {
+    show('s-closed');
+    return;
+  }
+  if (!pollData.active || !pollData.options.length) {
+    show('s-closed');
+    return;
+  }
+  const key = 'voted_poll_' + pollData.seq;
+  if (localStorage.getItem(key)) {
+    renderResults(pollData);
+    show('s-thanks');
+    return;
+  }
+  // Build vote screen
+  document.getElementById('q-text').textContent = pollData.question;
+  const list = document.getElementById('opts-list');
+  list.innerHTML = '';
+  pollData.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.textContent = opt;
+    btn.onclick = () => vote(i, key, btn);
+    list.appendChild(btn);
+  });
+  show('s-vote');
+}
+
+async function vote(idx, key, btn) {
+  document.querySelectorAll('.opt-btn').forEach(b => { b.disabled = true; });
+  btn.classList.add('selected');
+  try {
+    const r = await fetch('/api/poll/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ option: idx }),
+    });
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    localStorage.setItem(key, '1');
+    pollData.votes = d.votes;
+    renderResults(pollData);
+    show('s-thanks');
+  } catch {
+    document.querySelectorAll('.opt-btn').forEach(b => { b.disabled = false; });
+    btn.classList.remove('selected');
+  }
+}
+
+load();
+</script>
+</body>
+</html>

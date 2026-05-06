@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scorer — Scoreboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070d;--pan:#0f0f1c;--acc:#eab84a;--grn:#22c55e;--red:#f43f5e;
+  --blu:#7c84f8;--txt:#eeeef8;--dim:rgba(210,210,240,.42);--r:8px;--r2:12px;
+  --home:#22c55e;--away:#7c84f8;--bd:rgba(255,255,255,.07);
+}
+body{min-height:100vh;background:radial-gradient(ellipse 110% 90% at 50% 20%,#111132 0%,#07070d 68%);color:var(--txt);font-family:'Rajdhani',sans-serif;padding-bottom:40px;}
+
+/* TOPBAR */
+.topbar{background:linear-gradient(180deg,#0f0f20,#0a0a16);border-bottom:1px solid rgba(255,255,255,.07);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-family:'Orbitron',monospace;font-weight:900;color:var(--acc);letter-spacing:.1em;font-size:.9rem;}
+.brand small{font-family:'Rajdhani',sans-serif;color:var(--dim);letter-spacing:.14em;font-weight:600;margin-left:10px;font-size:.72rem;text-transform:uppercase;}
+.user-info{display:flex;align-items:center;gap:14px;}
+.user-pill{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:5px 14px;border-radius:20px;font-size:.76rem;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;}
+.user-pill b{color:var(--acc);margin-right:6px;}
+.logout-btn{background:transparent;color:var(--red);border:1px solid rgba(244,63,94,.3);padding:5px 12px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;transition:all .14s;}
+.logout-btn:hover{background:rgba(244,63,94,.1);}
+
+/* MAIN */
+.wrap{max-width:900px;margin:0 auto;padding:24px;}
+
+/* PREVIEW */
+.preview{background:linear-gradient(160deg,#111128,#0c0c1e);border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);padding:20px 24px;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);}
+.p-title{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.7rem;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.p-dot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:ld 1.5s infinite;}
+@keyframes ld{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.p-row{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+.p-team{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.08em;}
+.p-team.h{color:var(--home);}
+.p-team.a{color:var(--away);}
+.p-score{font-family:'Orbitron',monospace;font-size:2.8rem;font-weight:900;color:#fff;}
+.p-sep{font-family:'Orbitron',monospace;font-size:2.2rem;color:var(--dim);}
+.p-meta{font-family:'Rajdhani',sans-serif;font-size:.82rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-top:8px;text-align:center;}
+
+/* SCORE GRID */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+.s-card{background:linear-gradient(160deg,#111128,#0c0c1e);border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);}
+.s-card.home{border-top:3px solid var(--home);}
+.s-card.away{border-top:3px solid var(--away);}
+.s-label{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;text-align:center;margin-bottom:8px;}
+.home .s-label{color:var(--home);}.away .s-label{color:var(--away);}
+.s-team{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;color:var(--dim);text-align:center;margin-bottom:6px;}
+.s-big{font-family:'Orbitron',monospace;font-size:5rem;font-weight:900;text-align:center;line-height:1;padding:12px 0;}
+.home .s-big{color:var(--home);text-shadow:0 0 40px rgba(34,197,94,.28);}
+.away .s-big{color:var(--away);text-shadow:0 0 40px rgba(124,132,248,.28);}
+.s-btns{display:grid;gap:6px;margin-bottom:6px;padding-top:9px;}
+.s-mini{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
+
+/* BTNS */
+.btn{padding:10px 14px;border:none;border-radius:var(--r);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.88rem;letter-spacing:.08em;text-transform:uppercase;transition:all .14s;white-space:nowrap;}
+.btn:active{transform:scale(.97);}
+.btn-grn{background:linear-gradient(135deg,#27d468,#1aad52);color:#05150a;box-shadow:0 4px 14px rgba(34,197,94,.25);}
+.btn-grn:hover{background:linear-gradient(135deg,#34e876,#22c55e);box-shadow:0 6px 20px rgba(34,197,94,.35);}
+.btn-blu{background:linear-gradient(135deg,#8b92fa,#6870f0);color:#08080f;box-shadow:0 4px 14px rgba(124,132,248,.25);}
+.btn-blu:hover{background:linear-gradient(135deg,#9ca3fb,#7c84f8);box-shadow:0 6px 20px rgba(124,132,248,.35);}
+.btn-gh{background:rgba(255,255,255,.05);color:var(--txt);border:1px solid rgba(255,255,255,.1);}
+.btn-gh:hover{background:rgba(255,255,255,.1);}
+.btn-dg{background:transparent;color:var(--red);border:1px solid rgba(244,63,94,.25);}
+.btn-dg:hover{background:rgba(244,63,94,.08);}
+.btn-acc{background:linear-gradient(135deg,#f5d060,#e8a820);color:#060510;box-shadow:0 4px 14px rgba(234,184,74,.2);}
+.btn-acc:hover{background:linear-gradient(135deg,#fae070,#f0b830);box-shadow:0 6px 20px rgba(234,184,74,.3);}
+
+/* CARD */
+.card{background:linear-gradient(160deg,#111128,#0c0c1e);border:1px solid rgba(255,255,255,.07);border-radius:var(--r2);padding:16px 18px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04);}
+.ct{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+
+/* EVENTS */
+.ev-log{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.ev{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:var(--r);padding:8px 12px;}
+.ev-t{font-family:'Orbitron',monospace;font-size:.74rem;color:var(--acc);min-width:42px;}
+.ev-i{font-size:1rem;}
+.ev-b{flex:1;}
+.ev-m{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.88rem;}
+.ev-s{font-family:'Rajdhani',sans-serif;font-size:.72rem;color:var(--dim);margin-top:1px;}
+.ev-x{color:var(--red);cursor:pointer;font-size:.72rem;padding:3px 7px;border-radius:5px;border:1px solid rgba(244,63,94,.25);}
+.ev-empty{text-align:center;padding:20px;color:var(--dim);font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;font-family:'Rajdhani',sans-serif;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:linear-gradient(160deg,#131330,#0d0d22);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:26px;width:440px;max-width:95vw;box-shadow:0 32px 80px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);animation:mi .3s cubic-bezier(.34,1.56,.64,1);}
+@keyframes mi{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-t{font-family:'Orbitron',monospace;font-weight:700;font-size:.9rem;letter-spacing:.1em;color:var(--acc);margin-bottom:16px;}
+.t-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.tp{padding:12px;border-radius:var(--r);border:2px solid transparent;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.08em;text-align:center;transition:all .15s;}
+.th{background:rgba(34,197,94,.1);color:var(--home);border-color:rgba(34,197,94,.25);}
+.th.sel{background:rgba(34,197,94,.22);border-color:var(--home);box-shadow:0 0 0 3px rgba(34,197,94,.12);}
+.ta{background:rgba(124,132,248,.1);color:var(--away);border-color:rgba(124,132,248,.25);}
+.ta.sel{background:rgba(124,132,248,.22);border-color:var(--away);box-shadow:0 0 0 3px rgba(124,132,248,.12);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+label{display:block;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;}
+input[type=text],select{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:9px 11px;color:var(--txt);font-family:'Rajdhani',sans-serif;font-size:.95rem;outline:none;transition:border-color .15s,box-shadow .15s;}
+input:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(234,184,74,.13);}
+select option{background:#131328;}
+.modal-f{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+
+#toast{position:fixed;bottom:20px;right:20px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;padding:10px 20px;border-radius:10px;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+#toast.show{transform:translateY(0);opacity:1;background:linear-gradient(135deg,#27d468,#1aad52);color:#05150a;}
+#toast.warn{background:linear-gradient(135deg,#ff8c42,#e86a00);color:#fff;}
+
+/* KEY BADGES & SHORTCUTS */
+.key-badge{position:absolute;top:-7px;right:-6px;background:rgba(234,184,74,.92);color:#080810;font-family:'Orbitron',monospace;font-size:.5rem;font-weight:900;padding:2px 5px;border-radius:3px;letter-spacing:.04em;pointer-events:none;z-index:2;line-height:1.2;}
+.kbd{display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-bottom:2px solid rgba(255,255,255,.06);border-radius:5px;padding:2px 7px;font-family:'Orbitron',monospace;font-size:.62rem;color:rgba(255,255,255,.5);min-width:20px;}
+.sc-grid{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;align-items:center;}
+.sc-d{font-family:'Rajdhani',sans-serif;font-size:.82rem;letter-spacing:.06em;color:var(--dim);}
+.sc-sep{grid-column:1/-1;height:1px;background:var(--bd);margin:3px 0;}
+.sc-sec{grid-column:1/-1;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.65rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:5px;}
+
+/* SCORE FLASH */
+@keyframes scoreflash{0%{transform:scale(1)}25%{transform:scale(1.18)}65%{transform:scale(.95)}100%{transform:scale(1)}}
+.flash{animation:scoreflash .5s cubic-bezier(.34,1.56,.64,1);}
+
+/* UNDO BAR */
+.undo-bar{background:rgba(124,77,255,.08);border:1px solid rgba(124,77,255,.2);border-radius:var(--r);padding:9px 14px;display:none;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.undo-bar.on{display:flex;}
+.undo-t{font-family:'Rajdhani',sans-serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.45);}
+.undo-t b{color:#a78bfa;}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="topbar">
+  <div class="brand">⚡ SCOREBOARD <small>SCORER PANEL</small></div>
+  <div class="user-info">
+    <div class="user-pill"><b id="userName">—</b><span id="userRole">scorer</span></div>
+    <button class="logout-btn" onclick="logout()">Logout →</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- PREVIEW -->
+  <div class="preview">
+    <div class="p-title"><div class="p-dot"></div> LIVE SCORE</div>
+    <div class="p-row">
+      <div class="p-team h" id="pHName">HOME</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="p-score" id="pHScore">0</div>
+        <div class="p-sep">–</div>
+        <div class="p-score" id="pAScore">0</div>
+      </div>
+      <div class="p-team a" id="pAName">AWAY</div>
+    </div>
+    <div class="p-meta"><span id="pPeriod">1ST HALF</span> · <span id="pClock">00:00</span> · <span id="pStatus">LIVE</span></div>
+  </div>
+
+  <!-- UNDO BAR -->
+  <div class="undo-bar" id="undo-bar">
+    <span class="undo-t">Last: <b id="undo-desc">—</b></span>
+    <button class="btn btn-gh btn-sm" onclick="doUndo()" style="color:#a78bfa;border-color:rgba(124,77,255,.3);">↩ Undo <span class="kbd" style="margin-left:5px;font-size:.55rem;">Z</span></button>
+  </div>
+
+  <!-- SPORT-SPECIFIC SCORING -->
+  <div class="score-grid">
+    <div class="s-card home">
+      <div class="s-label">HOME</div>
+      <div class="s-team" id="hTeamName">—</div>
+      <div class="s-big" id="hBig">0</div>
+      <div class="s-btns" id="hBtns"></div>
+      <div class="s-mini">
+        <button class="btn btn-dg" onclick="adj('home',-1)">–1</button>
+        <button class="btn btn-dg" onclick="resetScore('home')">Reset</button>
+      </div>
+    </div>
+    <div class="s-card away">
+      <div class="s-label">AWAY</div>
+      <div class="s-team" id="aTeamName">—</div>
+      <div class="s-big" id="aBig">0</div>
+      <div class="s-btns" id="aBtns"></div>
+      <div class="s-mini">
+        <button class="btn btn-dg" onclick="adj('away',-1)">–1</button>
+        <button class="btn btn-dg" onclick="resetScore('away')">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENT LOG -->
+  <div class="card">
+    <div class="ct">Match Timeline</div>
+    <div class="ev-log" id="evLog"><div class="ev-empty">No events yet.</div></div>
+  </div>
+
+  <!-- KEYBOARD SHORTCUTS -->
+  <div class="card" id="shortcuts-card">
+    <div class="ct">Keyboard Shortcuts</div>
+    <div class="sc-grid" id="sc-grid-keys">
+      <!-- populated by JS based on sport -->
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);">
+      <div class="sc-grid">
+        <span class="sc-sec">General</span>
+        <span class="kbd">Z</span><span class="sc-d">Undo last score</span>
+        <span class="kbd">Esc</span><span class="sc-d">Close modal</span>
+        <span class="kbd">Enter</span><span class="sc-d">Confirm score (when modal open)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO -->
+  <div class="card" style="font-size:.82rem;color:var(--dim);line-height:1.6;">
+    <b style="color:var(--acc);">Scorer Role</b> · You can add scores, events, and update statistics. Other controls (teams, sponsors, graphics, cue list) are disabled in this role.
+  </div>
+</div>
+
+<!-- SCORER MODAL -->
+<div class="modal-bg" id="scModal">
+  <div class="modal">
+    <div class="modal-t">⚽ <span id="mdLabel">Score Event</span></div>
+    <div class="t-pick">
+      <div class="tp th sel" id="mdH" onclick="pickTeam('home')"><div id="mdHLbl">HOME</div></div>
+      <div class="tp ta" id="mdA" onclick="pickTeam('away')"><div id="mdALbl">AWAY</div></div>
+    </div>
+    <div class="g2">
+      <div><label>Player</label><input type="text" id="mdPlayer" placeholder="e.g. J. Smith" list="dl-players" autocomplete="off"><datalist id="dl-players"></datalist></div>
+      <div><label>Time</label><input type="text" id="mdTime" placeholder="e.g. 45'"></div>
+    </div>
+    <div><label>Event Type</label><select id="mdType">
+      <option value="goal">⚽ Goal</option><option value="try">🏉 Try</option><option value="basket">🏀 Basket</option>
+      <option value="penalty">🎯 Penalty</option><option value="owngoal">🔄 Own Goal</option>
+      <option value="other">📋 Other</option>
+    </select></div>
+    <div class="modal-f">
+      <button class="btn btn-gh" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-acc" onclick="confirmScore()">✓ Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SPORTS = {
+  soccer:    {periods:['1ST HALF','2ND HALF','EXTRA TIME 1','EXTRA TIME 2','PENALTIES'], btns:[{l:'+1 GOAL',v:1,hk:'H',ak:'A'}]},
+  basketball:{periods:['Q1','Q2','Q3','Q4','OT'], btns:[{l:'+3',v:3,hk:'3',ak:'⇧3'},{l:'+2',v:2,hk:'2',ak:'⇧2'},{l:'+1',v:1,hk:'1',ak:'⇧1'}]},
+  rugby:     {periods:['1ST HALF','2ND HALF','EXTRA TIME 1','EXTRA TIME 2'], btns:[{l:'+5 TRY',v:5,hk:'T',ak:'⇧T'},{l:'+2 CONV',v:2,hk:'C',ak:'⇧C'},{l:'+3 PEN',v:3,hk:'P',ak:'⇧P'},{l:'+1 DROP',v:1,hk:'D',ak:'⇧D'}]},
+};
+const CEL_TEXT={goal:'GOAL!',try:'TRY!',basket:'SCORE!',penalty:'PENALTY!',owngoal:'OWN GOAL',yellowcard:'YELLOW CARD',redcard:'RED CARD',sub:'SUBSTITUTION',foul:'FOUL',other:'EVENT'};
+const EICO={goal:'⚽',try:'🏉',basket:'🏀',penalty:'🎯',owngoal:'🔄',yellowcard:'🟨',redcard:'🟥',sub:'🔁',foul:'⚠️',other:'📋'};
+
+let S = null;
+let PLAYERS = {home:[], away:[]};
+let mdSide = 'home', mdVal = 0;
+let undoStack = [];
+let _prevHS = -1, _prevAS = -1; // -1 = not yet initialized (suppress flash on first load)
+let _prevSport = null;
+
+function toast(msg, warn=false){
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.className = warn ? 'show warn' : 'show';
+  clearTimeout(t._t); t._t = setTimeout(()=>t.className='', 1800);
+}
+
+// ── LOAD USER INFO ──
+fetch('/api/me').then(r=>r.json()).then(d=>{
+  if(!d.loggedIn){ location.href = '/login'; return; }
+  document.getElementById('userName').textContent = d.name || d.username;
+  document.getElementById('userRole').textContent = d.role;
+});
+
+async function logout(){
+  await fetch('/api/logout',{method:'POST'});
+  location.href = '/login';
+}
+
+// ── APPLY STATE ──
+function apply(s){
+  S = s;
+  const cfg = SPORTS[s.sport] || SPORTS.soccer;
+  const pi = Math.max(0, Math.min(s.period||0, cfg.periods.length-1));
+  document.getElementById('pHName').textContent = s.homeTeam || 'HOME';
+  document.getElementById('pAName').textContent = s.awayTeam || 'AWAY';
+  document.getElementById('pHScore').textContent = s.homeScore || 0;
+  document.getElementById('pAScore').textContent = s.awayScore || 0;
+  document.getElementById('pPeriod').textContent = cfg.periods[pi] || '—';
+  document.getElementById('pClock').textContent = s.clock || '00:00';
+  document.getElementById('pStatus').textContent = s.gameStatus || 'LIVE';
+  document.getElementById('hTeamName').textContent = s.homeTeam || '—';
+  document.getElementById('aTeamName').textContent = s.awayTeam || '—';
+  document.getElementById('hBig').textContent = s.homeScore || 0;
+  document.getElementById('aBig').textContent = s.awayScore || 0;
+  document.getElementById('mdHLbl').textContent = s.homeTeam || 'HOME';
+  document.getElementById('mdALbl').textContent = s.awayTeam || 'AWAY';
+
+  // Flash score if changed (skip on first load when _prevHS is -1)
+  const newHS = s.homeScore || 0, newAS = s.awayScore || 0;
+  if (_prevHS >= 0 && newHS !== _prevHS) flashScore('home');
+  if (_prevAS >= 0 && newAS !== _prevAS) flashScore('away');
+  _prevHS = newHS; _prevAS = newAS;
+
+  // Build score buttons and shortcuts only when sport changes
+  if (s.sport !== _prevSport) {
+    _prevSport = s.sport;
+    ['h','a'].forEach(side=>{
+      const el = document.getElementById(side+'Btns');
+      el.style.gridTemplateColumns = `repeat(${cfg.btns.length}, 1fr)`;
+      const sideName = side==='h'?'home':'away';
+      const col = side==='h'?'btn-grn':'btn-blu';
+      el.innerHTML = cfg.btns.map(b => {
+        const keyHint = side==='h' ? b.hk : b.ak;
+        return `<button class="btn ${col}" style="position:relative;" onclick="openModal('${sideName}',${b.v},'${b.l}')">${b.l}${keyHint ? `<span class="key-badge">${keyHint}</span>` : ''}</button>`;
+      }).join('');
+    });
+    buildShortcutsGrid(cfg, s.sport);
+  }
+
+  // Events
+  const log = document.getElementById('evLog');
+  if(!s.events || !s.events.length){
+    log.innerHTML = '<div class="ev-empty">No events yet.</div>';
+  } else {
+    log.innerHTML = [...s.events].reverse().map(ev=>`
+      <div class="ev">
+        <div class="ev-t">${ev.time||'—'}</div><div class="ev-i">${EICO[ev.type]||'📋'}</div>
+        <div class="ev-b">
+          <div class="ev-m">${ev.player||ev.team||'—'}</div>
+          <div class="ev-s">${ev.type.toUpperCase()} · ${ev.team} · ${ev.score||''}</div>
+        </div>
+        <div class="ev-x" onclick="deleteEvent(${ev.id})">✕</div>
+      </div>`).join('');
+  }
+}
+
+// ── MODAL ──
+function openModal(side, val, label){
+  mdSide = side; mdVal = val;
+  document.getElementById('mdLabel').textContent = label;
+  document.getElementById('mdPlayer').value = '';
+  document.getElementById('mdTime').value = document.getElementById('pClock').textContent;
+  pickTeam(side);
+  document.getElementById('scModal').classList.add('on');
+  setTimeout(()=>document.getElementById('mdPlayer').focus(), 80);
+}
+
+function pickTeam(side){
+  mdSide = side;
+  document.getElementById('mdH').className = 'tp th' + (side==='home'?' sel':'');
+  document.getElementById('mdA').className = 'tp ta' + (side==='away'?' sel':'');
+  updatePlayerDroplist();
+}
+
+function updatePlayerDroplist(){
+  const players = PLAYERS[mdSide] || [];
+  document.getElementById('dl-players').innerHTML = players.map(p=>`<option value="${p.name}">#${p.number} ${p.name} · ${p.position}</option>`).join('');
+}
+
+function closeModal(){document.getElementById('scModal').classList.remove('on');}
+
+async function confirmScore(){
+  const player = document.getElementById('mdPlayer').value.trim();
+  const time = document.getElementById('mdTime').value.trim() || (S?.clock||'');
+  const type = document.getElementById('mdType').value;
+  if(!S) return;
+  const prevHS = S.homeScore || 0, prevAS = S.awayScore || 0;
+  if(mdSide==='home') S.homeScore = Math.min(999, (S.homeScore||0) + mdVal);
+  else S.awayScore = Math.min(999, (S.awayScore||0) + mdVal);
+  const ev = {id:Date.now(), type, side:mdSide, player, time, team:mdSide==='home'?S.homeTeam:S.awayTeam, score:`${S.homeScore}-${S.awayScore}`};
+  S.events.push(ev);
+  undoStack.push({homeScore:prevHS, awayScore:prevAS, eventId:ev.id, desc:`${mdSide==='home'?S.homeTeam:S.awayTeam} +${mdVal}`});
+  if(undoStack.length > 20) undoStack.shift();
+  const ub = document.getElementById('undo-bar');
+  document.getElementById('undo-desc').textContent = `${mdSide==='home'?S.homeTeam:S.awayTeam} +${mdVal}`;
+  ub.classList.add('on');
+
+  if(!S.playerStats) S.playerStats = {};
+  if(!S.playerStats[player]) S.playerStats[player] = {};
+  const map={goal:'goals',try:'tries',basket:'baskets',penalty:'penalties',owngoal:'ownGoals',yellowcard:'yellowCards',redcard:'redCards',sub:'subs',foul:'fouls'};
+  const key = map[type];
+  if(key) S.playerStats[player][key] = (S.playerStats[player][key]||0)+1;
+
+  S.celebration = {text: CEL_TEXT[type]||'EVENT!', scorer: player ? `${time} — ${player}`:'', seq:Date.now(), duration:3};
+  S.lowerThird = {type: (EICO[type]||'📋')+' '+type.toUpperCase(), main: player || S[mdSide+'Team'], sub: `${time} — ${S[mdSide+'Team']} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6};
+  closeModal();
+  apply(S);          // optimistic: refresh score + event log immediately
+  await pushState();
+  toast(`${mdSide==='home'?S.homeTeam:S.awayTeam} +${mdVal}`);
+}
+
+async function adj(side,d){
+  if(d > 0){openModal(side,d,`+${d}`);return;}
+  if(!S) return;
+  if(side==='home') S.homeScore = Math.max(0,(S.homeScore||0)+d);
+  else S.awayScore = Math.max(0,(S.awayScore||0)+d);
+  apply(S); await pushState(); toast('Score adjusted');
+}
+async function resetScore(side){
+  if(!confirm(`Reset ${side} score to 0?`)) return;
+  if(side==='home') S.homeScore = 0; else S.awayScore = 0;
+  apply(S); await pushState(); toast('Reset');
+}
+async function deleteEvent(id){
+  S.events = S.events.filter(e => e.id !== id);
+  apply(S); await pushState(); toast('Event removed');
+}
+
+// ── PUSH STATE ──
+// Only send the fields the scorer is allowed to change (matches SCORER_ALLOWED_FIELDS on server)
+const SCORER_FIELDS = ['homeScore','awayScore','events','possession','stats','extras','lowerThird','celebration','announcement','annSeq','playerStats'];
+async function pushState(){
+  if(!S) return;
+  const patch = {};
+  for(const k of SCORER_FIELDS) patch[k] = S[k];
+  try {
+    const res = await fetch('/state', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(patch)});
+    if(!res.ok) throw new Error(await res.text());
+    // Clear one-shot overlay fields from local state after a successful push
+    // so they don’t get re-sent on the next action
+    S.celebration = null;
+    S.lowerThird  = null;
+  } catch(e){ toast('Save failed: '+e.message, true); }
+}
+
+// ── UNDO ──
+async function doUndo(){
+  if(!undoStack.length){ toast('Nothing to undo', true); return; }
+  const prev = undoStack.pop();
+  S.homeScore = prev.homeScore;
+  S.awayScore = prev.awayScore;
+  S.events = S.events.filter(e => e.id !== prev.eventId);
+  apply(S);          // immediate UI refresh
+  await pushState();
+  toast('Undone: ' + prev.desc);
+  if(undoStack.length){
+    document.getElementById('undo-desc').textContent = undoStack[undoStack.length-1].desc;
+  } else {
+    document.getElementById('undo-bar').classList.remove('on');
+  }
+}
+
+// ── FLASH ──
+function flashScore(side){
+  const el = document.getElementById(side==='home'?'hBig':'aBig');
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 600);
+}
+
+// ── SHORTCUTS GRID ──
+function buildShortcutsGrid(cfg, sport){
+  const grid = document.getElementById('sc-grid-keys');
+  if(!grid) return;
+  let rows = '';
+  if(sport==='soccer'){
+    rows = `<span class="sc-sec">Soccer Scoring</span>
+      <span class="kbd">H</span><span class="sc-d">HOME goal (+1)</span>
+      <span class="kbd">A</span><span class="sc-d">AWAY goal (+1)</span>`;
+  } else if(sport==='basketball'){
+    rows = `<span class="sc-sec">Basketball — Home</span>
+      <span class="kbd">3</span><span class="sc-d">HOME +3 three-pointer</span>
+      <span class="kbd">2</span><span class="sc-d">HOME +2 field goal</span>
+      <span class="kbd">1</span><span class="sc-d">HOME +1 free throw</span>
+      <span class="sc-sec">Basketball — Away</span>
+      <span class="kbd">⇧3</span><span class="sc-d">AWAY +3 three-pointer</span>
+      <span class="kbd">⇧2</span><span class="sc-d">AWAY +2 field goal</span>
+      <span class="kbd">⇧1</span><span class="sc-d">AWAY +1 free throw</span>`;
+  } else if(sport==='rugby'){
+    rows = `<span class="sc-sec">Rugby — Home (no shift) / Away (+ Shift)</span>
+      <span class="kbd">T</span><span class="sc-d">Try (+5)</span>
+      <span class="kbd">C</span><span class="sc-d">Conversion (+2)</span>
+      <span class="kbd">P</span><span class="sc-d">Penalty (+3)</span>
+      <span class="kbd">D</span><span class="sc-d">Drop goal (+1)</span>`;
+  }
+  grid.innerHTML = rows;
+}
+
+// ── KEYBOARD SHORTCUTS ──
+document.addEventListener('keydown', e => {
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  const modalOn = document.getElementById('scModal').classList.contains('on');
+  if(e.code==='Escape'){ closeModal(); return; }
+  if(modalOn && e.code==='Enter'){ e.preventDefault(); confirmScore(); return; }
+  if(modalOn) return;
+  if(!S) return;
+  if(e.code==='KeyZ'){ doUndo(); return; }
+  if(S.sport==='soccer'){
+    if(!e.shiftKey && e.code==='KeyH'){ openModal('home',1,'+1 GOAL'); return; }
+    if(!e.shiftKey && e.code==='KeyA'){ openModal('away',1,'+1 GOAL'); return; }
+  }
+  if(S.sport==='basketball'){
+    const bv={Digit3:3,Digit2:2,Digit1:1}; const v=bv[e.code];
+    if(v!==undefined){ openModal(e.shiftKey?'away':'home',v,`+${v}`); return; }
+  }
+  if(S.sport==='rugby'){
+    const rm={KeyT:{v:5,l:'+5 TRY'},KeyC:{v:2,l:'+2 CONV'},KeyP:{v:3,l:'+3 PEN'},KeyD:{v:1,l:'+1 DROP'}};
+    const ra=rm[e.code];
+    if(ra){ openModal(e.shiftKey?'away':'home',ra.v,ra.l); return; }
+  }
+});
+
+// ── SSE REAL-TIME ──
+function connectSSE(){
+  const es = new EventSource('/events');
+  es.onmessage = e => { try { apply(JSON.parse(e.data)); } catch{} };
+  es.onerror = () => { es.close(); setTimeout(connectSSE, 2000); };
+}
+
+// ── INIT ──
+async function loadPlayers(){
+  try{
+    const r = await fetch('/api/players');
+    if(r.ok) PLAYERS = await r.json();
+  }catch(e){}
+}
+fetch('/state').then(r=>r.json()).then(apply).catch(()=>{});
+loadPlayers();
+connectSSE();
+
+// Polling fallback — keeps scorer in sync if SSE drops or is slow
+setInterval(async () => {
+  try { const r = await fetch('/state'); if(r.ok) apply(await r.json()); } catch{}
+}, 2000);
+</script>
+</body>
+</html>

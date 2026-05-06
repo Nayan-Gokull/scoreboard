@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Fan Selfie</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#f5c842;--bg:#07070d;--sur:#0f0f1c;--bd:rgba(255,255,255,.09);--txt:#eeeef8;--dim:rgba(255,255,255,.38);}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
+body{background:radial-gradient(ellipse 120% 80% at 50% 0%,#111128 0%,#07070d 70%);}
+
+.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:28px 20px;text-align:center;}
+.screen.on{display:flex;}
+
+.spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.badge{display:inline-block;background:var(--gold);color:#06060f;font-size:.6rem;font-weight:800;letter-spacing:.26em;text-transform:uppercase;padding:5px 16px;border-radius:2px;margin-bottom:22px;}
+
+/* Camera screen */
+.cam-wrap{position:relative;width:100%;max-width:380px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:#000;margin-bottom:20px;}
+#video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);}
+.cam-overlay{position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 3px rgba(245,200,66,.35);pointer-events:none;}
+
+.cam-hint{font-size:.82rem;color:var(--dim);margin-bottom:22px;line-height:1.4;}
+
+.btn-row{display:flex;gap:12px;width:100%;max-width:380px;}
+.btn{flex:1;padding:15px 10px;border-radius:11px;font-size:1rem;font-weight:700;border:none;cursor:pointer;transition:opacity .15s,transform .1s;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:var(--gold);color:#06060f;}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1.5px solid rgba(255,255,255,.12);}
+.btn:disabled{opacity:.45;cursor:default;}
+
+/* Preview screen */
+.preview-wrap{position:relative;width:100%;max-width:380px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:#000;margin-bottom:20px;}
+#canvas{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* Uploading */
+.up-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px;}
+.up-txt{font-size:.9rem;color:var(--dim);}
+
+/* Thanks screen */
+.thanks-icon{font-size:3.2rem;margin-bottom:14px;}
+.thanks-head{font-size:1.4rem;font-weight:700;margin-bottom:8px;}
+.thanks-sub{font-size:.88rem;color:var(--dim);line-height:1.5;}
+
+/* Closed */
+.closed-icon{font-size:3rem;margin-bottom:18px;opacity:.6;}
+.closed-head{font-size:1.2rem;font-weight:700;margin-bottom:8px;}
+.closed-sub{font-size:.88rem;color:var(--dim);}
+</style>
+</head>
+<body>
+
+<div class="screen on" id="s-loading">
+  <div class="spinner"></div>
+  <div style="color:var(--dim);font-size:.88rem;letter-spacing:.06em;">Loading…</div>
+</div>
+
+<div class="screen" id="s-cam">
+  <div class="badge">SNAP &amp; SHARE</div>
+  <div class="cam-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="cam-overlay"></div>
+  </div>
+  <div class="cam-hint">Your selfie will appear on the big screen!</div>
+  <div class="btn-row">
+    <button class="btn btn-gold" id="snap-btn" onclick="snap()">📸 Take Selfie</button>
+  </div>
+</div>
+
+<div class="screen" id="s-preview">
+  <div class="badge">SNAP &amp; SHARE</div>
+  <div class="preview-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="retake()">Retake</button>
+    <button class="btn btn-gold" id="submit-btn" onclick="submit()">Submit!</button>
+  </div>
+</div>
+
+<div class="screen" id="s-uploading">
+  <div class="up-spinner"></div>
+  <div class="up-txt">Uploading your selfie…</div>
+</div>
+
+<div class="screen" id="s-thanks">
+  <div class="badge">YOU'RE ON AIR!</div>
+  <div class="thanks-icon">🎉</div>
+  <div class="thanks-head">You're on the big screen!</div>
+  <div class="thanks-sub">Watch for your photo to appear.<br>Thanks for being part of the show!</div>
+</div>
+
+<div class="screen" id="s-closed">
+  <div class="closed-icon">📸</div>
+  <div class="closed-head">Selfie Cam isn't live yet</div>
+  <div class="closed-sub">Keep an eye on the big screen<br>and scan the QR when it appears!</div>
+</div>
+
+<script>
+const MAX_DIM = 900;
+let stream = null;
+let capturedBlob = null;
+
+function show(id) {
+  ['s-loading','s-cam','s-preview','s-uploading','s-thanks','s-closed'].forEach(s => {
+    document.getElementById(s).classList.toggle('on', s === id);
+  });
+}
+
+async function checkActive() {
+  try {
+    const r = await fetch('/state', { cache: 'no-store' });
+    if (!r.ok) throw new Error();
+    const st = await r.json();
+    const sw = st.selfieWall || {};
+    if (!sw.active) {
+      show('s-closed');
+      return false;
+    }
+    return true;
+  } catch {
+    show('s-closed');
+    return false;
+  }
+}
+
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false,
+    });
+    document.getElementById('video').srcObject = stream;
+    show('s-cam');
+  } catch {
+    // fallback: file picker
+    show('s-cam');
+    document.getElementById('snap-btn').textContent = '📷 Choose Photo';
+    document.getElementById('snap-btn').onclick = pickFile;
+  }
+}
+
+function pickFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'user';
+  input.onchange = () => {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => drawToCanvas(img);
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  };
+  input.click();
+}
+
+function snap() {
+  const video = document.getElementById('video');
+  if (!video.srcObject) { pickFile(); return; }
+  const w = video.videoWidth || 640;
+  const h = video.videoHeight || 480;
+  drawToCanvas(video, w, h);
+}
+
+function drawToCanvas(source, srcW, srcH) {
+  const canvas = document.getElementById('canvas');
+  // crop to 3:4
+  srcW = srcW || source.naturalWidth || source.width;
+  srcH = srcH || source.naturalHeight || source.height;
+  let cropW = srcW, cropH = Math.round(srcW * 4 / 3);
+  if (cropH > srcH) { cropH = srcH; cropW = Math.round(srcH * 3 / 4); }
+  const sx = Math.round((srcW - cropW) / 2);
+  const sy = Math.round((srcH - cropH) / 2);
+
+  // output dims
+  let outW = cropW, outH = cropH;
+  if (outW > MAX_DIM) { outH = Math.round(outH * MAX_DIM / outW); outW = MAX_DIM; }
+  if (outH > Math.round(MAX_DIM * 4 / 3)) { outW = Math.round(outW * Math.round(MAX_DIM * 4 / 3) / outH); outH = Math.round(MAX_DIM * 4 / 3); }
+
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.translate(outW, 0);
+  ctx.scale(-1, 1); // mirror to match preview
+  ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, outW, outH);
+  ctx.restore();
+
+  canvas.toBlob(blob => {
+    capturedBlob = blob;
+    show('s-preview');
+  }, 'image/jpeg', 0.85);
+}
+
+function retake() {
+  capturedBlob = null;
+  show('s-cam');
+}
+
+async function submit() {
+  if (!capturedBlob) return;
+  document.getElementById('submit-btn').disabled = true;
+  show('s-uploading');
+  try {
+    const dataUrl = await blobToDataUrl(capturedBlob);
+    const r = await fetch('/api/selfie/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl }),
+    });
+    if (!r.ok) throw new Error();
+    show('s-thanks');
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  } catch {
+    show('s-preview');
+    document.getElementById('submit-btn').disabled = false;
+    alert('Upload failed — please try again.');
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => res(e.target.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function init() {
+  const active = await checkActive();
+  if (active) await startCamera();
+}
+
+init();
+</script>
+</body>
+</html>

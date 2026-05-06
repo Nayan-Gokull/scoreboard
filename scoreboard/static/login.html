@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scoreboard · Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07070d;--panel:#0f0f1c;--acc:#eab84a;--grn:#22c55e;
+  --red:#f43f5e;--txt:#eeeef8;--dim:rgba(210,210,240,.44);--bd:rgba(255,255,255,.07);
+  --r:8px;--r2:14px;
+}
+body{min-height:100vh;background:radial-gradient(ellipse 110% 90% at 50% 30%,#131332 0%,#07070d 72%);color:var(--txt);font-family:'Rajdhani',sans-serif;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.45;}
+
+.card{position:relative;z-index:1;background:linear-gradient(160deg,#111128,#0c0c1c);border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);padding:40px 38px 34px;width:420px;max-width:100%;box-shadow:0 32px 80px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.05);}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--grn) 50%,var(--acc) 50%);border-radius:var(--r2) var(--r2) 0 0;}
+
+.logo{text-align:center;margin-bottom:30px;}
+.logo .brand{font-family:'Orbitron',monospace;font-weight:900;font-size:1.1rem;color:var(--acc);letter-spacing:.15em;display:inline-flex;align-items:center;gap:8px;}
+.logo .sub{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:.1em;color:#fff;margin-top:6px;}
+.logo .tag{font-family:'Rajdhani',sans-serif;font-size:.74rem;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-top:4px;}
+
+label{display:block;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;}
+input{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:11px 14px;color:var(--txt);font-family:'Rajdhani',sans-serif;font-size:1rem;outline:none;transition:border-color .15s,box-shadow .15s;}
+input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(234,184,74,.14);}
+
+.fg{margin-bottom:17px;}
+
+.btn{width:100%;padding:13px;border:none;border-radius:var(--r);cursor:pointer;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.1em;text-transform:uppercase;transition:all .15s;background:linear-gradient(135deg,#f5d060,#e8a820);color:#06050a;box-shadow:0 4px 16px rgba(234,184,74,.2);}
+.btn:hover{background:linear-gradient(135deg,#fae070,#f0b830);box-shadow:0 6px 22px rgba(234,184,74,.32);transform:translateY(-1px);}
+.btn:active{transform:scale(.98) translateY(0);box-shadow:0 2px 8px rgba(234,184,74,.15);}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.err{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.28);border-radius:var(--r);padding:10px 14px;color:#fca5a5;font-size:.82rem;letter-spacing:.04em;margin-bottom:14px;display:none;}
+.err.show{display:block;animation:shake .35s ease;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+.hint{margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.06);font-family:'Rajdhani',sans-serif;font-size:.76rem;line-height:1.75;color:var(--dim);letter-spacing:.03em;}
+.hint b{color:rgba(255,255,255,.65);}
+.hint code{background:rgba(255,255,255,.06);padding:2px 7px;border-radius:4px;color:var(--acc);font-family:'Orbitron',monospace;font-size:.7rem;}
+
+.public-links{text-align:center;margin-top:18px;font-size:.78rem;color:var(--dim);letter-spacing:.07em;}
+.public-links a{color:var(--acc);text-decoration:none;margin:0 8px;transition:opacity .14s;}
+.public-links a:hover{opacity:.7;}
+</style>
+</head>
+<body>
+<form class="card" id="loginForm">
+  <div class="logo">
+    <div class="brand">⚡ SCOREBOARD</div>
+    <div class="sub">Control Panel</div>
+    <div class="tag">Broadcast Graphics System</div>
+  </div>
+
+  <div class="err" id="err"></div>
+
+  <div class="fg">
+    <label>Username</label>
+    <input type="text" id="username" autocomplete="username" autofocus required>
+  </div>
+  <div class="fg">
+    <label>Password</label>
+    <input type="password" id="password" autocomplete="current-password" required>
+  </div>
+  <button class="btn" id="submitBtn" type="submit">Sign In →</button>
+
+  <div class="hint">
+    <b>Default test users</b> (change in <code>users.json</code>):<br>
+    <code>admin / admin</code> — full access<br>
+    <code>operator / operator</code> — match operations<br>
+    <code>scorer / scorer</code> — scoring only
+  </div>
+
+  <div class="public-links">
+    Public: <a href="/display" target="_blank">Live Display →</a> · <a href="/xml" target="_blank">XML Feed →</a>
+  </div>
+</form>
+
+<script>
+const form = document.getElementById('loginForm');
+const errEl = document.getElementById('err');
+const btn = document.getElementById('submitBtn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      errEl.textContent = data.error || 'Sign-in failed';
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Sign In →';
+      return;
+    }
+    // Redirect based on role
+    const routes = { admin: '/dashboard', operator: '/dashboard', scorer: '/scorer' };
+    location.href = routes[data.role] || '/dashboard';
+  } catch (err) {
+    errEl.textContent = 'Network error: ' + err.message;
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
+  }
+});
+
+// If already logged in, redirect away
+fetch('/api/me').then(r => r.json()).then(d => {
+  if (d.loggedIn) {
+    const routes = { admin: '/dashboard', operator: '/dashboard', scorer: '/scorer' };
+    location.href = routes[d.role] || '/dashboard';
+  }
+}).catch(() => {});
+</script>
+</body>
+</html>
