@@ -694,6 +694,16 @@
       font-size: .78rem;
     }
 
+    /* iOS-style toggle switch */
+    .sw-tog { display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;margin-left:auto; }
+    .sw-tog input { position:absolute;opacity:0;width:0;height:0; }
+    .sw-tog-pill { position:relative;width:38px;height:21px;background:rgba(255,255,255,.1);border-radius:11px;border:1.5px solid rgba(255,255,255,.13);transition:background .2s,border-color .2s;flex-shrink:0; }
+    .sw-tog-pill::after { content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;background:rgba(255,255,255,.4);border-radius:50%;transition:transform .2s,background .2s; }
+    .sw-tog input:checked + .sw-tog-pill { background:var(--org);border-color:var(--org); }
+    .sw-tog input:checked + .sw-tog-pill::after { transform:translateX(17px);background:#fff; }
+    .sw-tog-txt { font-size:.74rem;color:var(--dim);line-height:1.25;text-align:right;transition:color .2s; }
+    .sw-tog input:checked ~ .sw-tog-txt { color:var(--org); }
+
     .btn-xs {
       padding: 3px 6px;
       font-size: .72rem;
@@ -2916,14 +2926,15 @@
             </div>
             <div id="sw-ip-hint" style="font-size:.74rem;color:var(--dim);margin-top:5px;line-height:1.6;"></div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
             <button class="btn btn-grn btn-f" onclick="activateSelfieWall()">▶ Activate Selfie Wall</button>
             <button class="btn btn-dg btn-f" onclick="deactivateSelfieWall()">■ Deactivate</button>
+            <label class="sw-tog" title="When on, uploaded photos wait for operator approval before appearing on screen">
+              <input type="checkbox" id="sw-require-approval" onchange="saveSelfieApprovalSetting()">
+              <span class="sw-tog-pill"></span>
+              <span class="sw-tog-txt">Approval<br>Mode</span>
+            </label>
           </div>
-          <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:.85rem;margin-bottom:10px;">
-            <input type="checkbox" id="sw-require-approval" onchange="saveSelfieApprovalSetting()" style="width:15px;height:15px;accent-color:var(--org);">
-            <span>Require approval before photos appear on screen</span>
-          </label>
           <div id="sw-status" style="font-size:.8rem;color:var(--dim);padding:7px 10px;background:var(--sur2);border-radius:6px;border:1px solid var(--bd);">Selfie Wall is inactive.</div>
         </div>
 
