@@ -116,7 +116,8 @@ DEFAULT_STATE = {
     "qrOverlay": {"active": False, "url": "", "headline": "", "subtext": "", "label": "", "seq": 0},
     "poll": {"active": False, "question": "", "options": [], "votes": {}, "seq": 0},
     "pollResultsOverlay": {"active": False, "seq": 0},
-    "selfieWall": {"active": False, "qrUrl": "", "seq": 0, "requireApproval": False},
+    "selfieWall": {"active": False, "qrUrl": "", "seq": 0, "requireApproval": False, "sponsorLogo": ""},
+    "gameCode": "", "requireGameCode": True,
 }
 
 def load_state():
@@ -152,7 +153,6 @@ if not STATE.exists():
 # ═══════════════════════════════════════════════════════════════════════════
 DEFAULT_CONFIG = {
     "broadcastToken": "",  # empty = XML endpoint is public; set a string to require ?token=...
-    "displayToken": "",    # empty = display is public; set a string to require ?token=...
     "requireHttps": False,  # set True in production
 }
 
@@ -377,29 +377,6 @@ def verify_session_token(token: str):
     except Exception:
         return None
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  DISPLAY SESSION COOKIE  (separate from operator session)
-# ═══════════════════════════════════════════════════════════════════════════
-DISPLAY_COOKIE = "sb_display"
-DISPLAY_TTL    = 60 * 60 * 8  # 8 hours
-
-def make_display_cookie() -> str:
-    payload = {"d": 1, "exp": int(time.time()) + DISPLAY_TTL}
-    body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
-    sig = hmac.new(COOKIE_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
-    return f"{body}.{sig}"
-
-def verify_display_cookie(token: str) -> bool:
-    try:
-        body, sig = token.split(".", 1)
-        expected = hmac.new(COOKIE_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, sig):
-            return False
-        padding = "=" * ((4 - len(body) % 4) % 4)
-        payload = json.loads(base64.urlsafe_b64decode(body + padding))
-        return payload.get("exp", 0) >= time.time()
-    except Exception:
-        return False
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  LOGIN RATE LIMITING  (in-memory, per remote IP)
@@ -609,12 +586,6 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def _has_display_access(self) -> bool:
-        """True if the request carries a valid operator session OR a valid display cookie."""
-        if self._current_user():
-            return True
-        c = self._get_cookies()
-        return verify_display_cookie(c.get(DISPLAY_COOKIE, ""))
 
     def _require_login(self):
         user = self._current_user()
@@ -652,25 +623,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/login":
             return self._serve_static("login.html")
         if path == "/display":
-            cfg = load_config()
-            dt = cfg.get("displayToken", "")
-            if not dt or self._has_display_access():
-                return self._serve_static("display.html")
-            # Validate ?token= query param → set display cookie → redirect to clean URL
-            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-            provided = qs.get("token", [""])[0]
-            if provided and hmac.compare_digest(provided, dt):
-                secure = "; Secure" if cfg.get("requireHttps") else ""
-                cookie = f"{DISPLAY_COOKIE}={make_display_cookie()}; Path=/; HttpOnly; SameSite=Lax; Max-Age={DISPLAY_TTL}{secure}"
-                return self._redirect("/display", extra_headers={"Set-Cookie": cookie})
-            return self._send(403, b"<html><body style='font-family:sans-serif;padding:48px;background:#07070d;color:#eee'><h2 style='color:#f5c842'>Display Access Required</h2><p>A valid display token is required.<br>Contact your match operator.</p></body></html>", "text/html; charset=utf-8")
+            return self._serve_static("display.html")
         if path == "/poll":
             return self._serve_static("poll.html")
         if path == "/selfie":
             return self._serve_static("selfie.html")
         if path == "/api/selfie/list":
-            if not self._has_display_access():
-                return self._error("Unauthorized", 401)
             selfie_dir = MEDIA / "selfies"
             files = sorted(selfie_dir.glob("*.jpg"), key=lambda p: p.stat().st_mtime, reverse=True)
             urls = [f"/media/selfies/{p.name}" for p in files[:60]]
@@ -701,8 +659,6 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/xml", "/scoreboard.xml", "/xml.xml"):
             return self._handle_xml()
         if path == "/events":
-            if not self._has_display_access():
-                return self._error("Unauthorized", 401)
             return self._handle_sse(None)
         if path == "/api/me":
             user = self._current_user()
@@ -732,8 +688,6 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static("scorer.html")
 
         if path == "/state":
-            if not self._has_display_access():
-                return self._error("Unauthorized", 401)
             return self._send_json(load_state())
 
         if path == "/api/media-list":
@@ -1338,9 +1292,11 @@ class Handler(BaseHTTPRequestHandler):
             new_state["id"] = f"game_{ts}_{ht}_vs_{at}"
             new_state["createdAt"] = ts
             new_state["finalizedAt"] = 0
+            new_state["gameCode"] = secrets.token_hex(3).upper()
+            new_state["requireGameCode"] = bool(data.get("requireGameCode", True))
             save_state(new_state)
             sse_broadcast_state()
-            self._send_json({"ok": True, "id": new_state["id"]})
+            self._send_json({"ok": True, "id": new_state["id"], "gameCode": new_state["gameCode"]})
         except Exception as e:
             self._error(str(e), 500)
 

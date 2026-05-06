@@ -4,110 +4,188 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fan Selfie</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--gold:#f5c842;--bg:#07070d;--sur:#0f0f1c;--bd:rgba(255,255,255,.09);--txt:#eeeef8;--dim:rgba(255,255,255,.38);}
-html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
-body{background:radial-gradient(ellipse 120% 80% at 50% 0%,#111128 0%,#07070d 70%);}
+:root{--gold:#f5c842;--bg:#07070d;--dim:rgba(255,255,255,.38);--txt:#eeeef8;--bd:rgba(255,255,255,.09);}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+body{background:radial-gradient(ellipse 130% 80% at 50% -10%,#12112e 0%,#07070d 65%);}
 
-.screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:28px 20px;text-align:center;}
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;align-items:center;min-height:100dvh;padding:0;text-align:center;}
 .screen.on{display:flex;}
 
-.spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:18px;}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ── TOP BAR ── */
+.top-bar{width:100%;padding:14px 20px 12px;background:linear-gradient(180deg,rgba(10,10,24,1) 0%,rgba(7,7,13,0) 100%);display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:8px;}
+.brand-tag{font-family:'Orbitron',monospace;font-weight:900;font-size:.52rem;letter-spacing:.3em;color:rgba(255,255,255,.18);text-transform:uppercase;}
+.match-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.22);border-radius:20px;padding:4px 13px;}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:blink 1.4s ease infinite;flex-shrink:0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.match-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.76rem;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;}
 
-.badge{display:inline-block;background:var(--gold);color:#06060f;font-size:.6rem;font-weight:800;letter-spacing:.26em;text-transform:uppercase;padding:5px 16px;border-radius:2px;margin-bottom:22px;}
-
-/* Camera screen */
-.cam-wrap{position:relative;width:100%;max-width:380px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:#000;margin-bottom:20px;}
+/* ── CAMERA ── */
+.cam-outer{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 20px 0;}
+.cam-frame{position:relative;width:100%;max-width:360px;aspect-ratio:3/4;border-radius:20px;overflow:hidden;background:#000;}
 #video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);}
-.cam-overlay{position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 3px rgba(245,200,66,.35);pointer-events:none;}
 
-.cam-hint{font-size:.82rem;color:var(--dim);margin-bottom:22px;line-height:1.4;}
+/* Viewfinder corners */
+.vf-c{position:absolute;width:26px;height:26px;z-index:2;pointer-events:none;}
+.vf-c::before,.vf-c::after{content:'';position:absolute;background:var(--gold);opacity:.85;border-radius:2px;}
+.vf-c::before{width:3px;height:100%;}
+.vf-c::after{height:3px;width:100%;}
+.vf-tl{top:14px;left:14px;}
+.vf-tl::before{top:0;left:0;}.vf-tl::after{top:0;left:0;}
+.vf-tr{top:14px;right:14px;}
+.vf-tr::before{top:0;right:0;}.vf-tr::after{top:0;right:0;}
+.vf-bl{bottom:14px;left:14px;}
+.vf-bl::before{bottom:0;left:0;}.vf-bl::after{bottom:0;left:0;}
+.vf-br{bottom:14px;right:14px;}
+.vf-br::before{bottom:0;right:0;}.vf-br::after{bottom:0;right:0;}
 
-.btn-row{display:flex;gap:12px;width:100%;max-width:380px;}
-.btn{flex:1;padding:15px 10px;border-radius:11px;font-size:1rem;font-weight:700;border:none;cursor:pointer;transition:opacity .15s,transform .1s;}
-.btn:active{transform:scale(.97);}
-.btn-gold{background:var(--gold);color:#06060f;}
-.btn-ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1.5px solid rgba(255,255,255,.12);}
-.btn:disabled{opacity:.45;cursor:default;}
+/* Countdown overlay */
+.cd-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.42);z-index:5;opacity:0;pointer-events:none;transition:opacity .12s;}
+.cd-ov.on{opacity:1;pointer-events:all;}
+.cd-num{font-family:'Bebas Neue',sans-serif;font-size:8rem;color:#fff;line-height:1;text-shadow:0 0 60px rgba(245,200,66,.65),0 4px 32px rgba(0,0,0,.9);animation:cd-pop .3s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes cd-pop{from{transform:scale(1.7);opacity:0}to{transform:scale(1);opacity:1}}
 
-/* Preview screen */
-.preview-wrap{position:relative;width:100%;max-width:380px;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:#000;margin-bottom:20px;}
+/* Flash */
+.flash-ov{position:absolute;inset:0;background:#fff;pointer-events:none;opacity:0;z-index:10;transition:opacity .05s;}
+.flash-ov.on{opacity:1;}
+
+/* ── SHUTTER ── */
+.cam-controls{width:100%;max-width:360px;display:flex;align-items:center;justify-content:center;padding:18px 0 26px;flex-shrink:0;position:relative;}
+.hint-txt{font-size:.72rem;color:var(--dim);letter-spacing:.06em;position:absolute;bottom:4px;width:100%;text-align:center;}
+.shutter{width:74px;height:74px;border-radius:50%;border:none;background:linear-gradient(135deg,#f5d060,#e8a820);box-shadow:0 0 0 5px rgba(245,200,66,.18),0 0 0 11px rgba(245,200,66,.07),0 8px 28px rgba(0,0,0,.55);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.7rem;transition:transform .1s,box-shadow .15s;animation:shutter-pulse 2.8s ease infinite;-webkit-tap-highlight-color:transparent;}
+.shutter:active{transform:scale(.89);}
+.shutter:disabled{opacity:.4;animation:none;}
+@keyframes shutter-pulse{
+  0%,100%{box-shadow:0 0 0 5px rgba(245,200,66,.18),0 0 0 11px rgba(245,200,66,.07),0 8px 28px rgba(0,0,0,.55)}
+  50%{box-shadow:0 0 0 7px rgba(245,200,66,.25),0 0 0 16px rgba(245,200,66,.05),0 8px 28px rgba(0,0,0,.55)}
+}
+
+/* ── PREVIEW ── */
+.preview-outer{width:100%;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 20px 0;}
+.preview-label{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:.12em;color:#fff;margin-bottom:14px;}
+.preview-frame{width:100%;max-width:360px;aspect-ratio:3/4;border-radius:20px;overflow:hidden;background:#000;box-shadow:0 0 0 2px rgba(245,200,66,.28),0 20px 52px rgba(0,0,0,.65);}
 #canvas{width:100%;height:100%;object-fit:cover;display:block;}
+.preview-controls{width:100%;max-width:360px;display:flex;gap:12px;padding:18px 0 26px;}
 
-/* Uploading */
-.up-spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.1);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:20px;}
-.up-txt{font-size:.9rem;color:var(--dim);}
+/* ── BUTTONS ── */
+.btn{flex:1;padding:15px 10px;border-radius:12px;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.06em;border:none;cursor:pointer;transition:opacity .15s,transform .1s;-webkit-tap-highlight-color:transparent;}
+.btn:active{transform:scale(.97);}
+.btn-gold{background:linear-gradient(135deg,#f5d060,#e8a820);color:#06060f;}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1.5px solid rgba(255,255,255,.12);}
+.btn:disabled{opacity:.4;cursor:default;transform:none !important;}
 
-/* Thanks screen */
-.thanks-icon{font-size:3.2rem;margin-bottom:14px;}
-.thanks-head{font-size:1.4rem;font-weight:700;margin-bottom:8px;}
-.thanks-sub{font-size:.88rem;color:var(--dim);line-height:1.5;}
+/* ── UPLOADING ── */
+.up-ring{width:58px;height:58px;border:4px solid rgba(255,255,255,.08);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.up-txt{font-size:.88rem;color:var(--dim);letter-spacing:.06em;margin-top:16px;}
 
-/* Closed */
-.closed-icon{font-size:3rem;margin-bottom:18px;opacity:.6;}
-.closed-head{font-size:1.2rem;font-weight:700;margin-bottom:8px;}
-.closed-sub{font-size:.88rem;color:var(--dim);}
+/* ── THANKS ── */
+.thanks-screen{justify-content:center;overflow:hidden;}
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.thanks-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:44px 28px;gap:0;}
+.thanks-icon-ring{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,rgba(245,200,66,.15),rgba(245,200,66,.04));border:2px solid rgba(245,200,66,.28);display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:22px;animation:ring-pop .55s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes ring-pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.thanks-badge{display:inline-block;background:var(--gold);color:#06060f;font-family:'Orbitron',monospace;font-size:.52rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;padding:5px 16px;border-radius:2px;margin-bottom:16px;}
+.thanks-head{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:.09em;color:#fff;line-height:1;margin-bottom:12px;}
+.thanks-sub{font-size:.88rem;color:var(--dim);line-height:1.65;max-width:290px;}
+
+/* ── CLOSED ── */
+.closed-screen{justify-content:center;}
+.closed-inner{display:flex;flex-direction:column;align-items:center;padding:48px 28px;gap:14px;}
+.closed-icon-ring{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:.45;}
+.closed-head{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.09em;color:rgba(255,255,255,.6);}
+.closed-sub{font-size:.84rem;color:var(--dim);line-height:1.65;max-width:260px;}
+
+/* ── LOADING ── */
+.load-ring{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+.load-txt{font-size:.8rem;color:var(--dim);letter-spacing:.08em;margin-top:14px;}
+
+@keyframes confetti-fall{0%{opacity:1;transform:translateY(0) rotate(0deg);}100%{opacity:0;transform:translateY(105vh) rotate(740deg);}}
 </style>
 </head>
 <body>
 
-<div class="screen on" id="s-loading">
-  <div class="spinner"></div>
-  <div style="color:var(--dim);font-size:.88rem;letter-spacing:.06em;">Loading…</div>
+<!-- LOADING -->
+<div class="screen on" id="s-loading" style="justify-content:center;">
+  <div class="load-ring"></div>
+  <div class="load-txt">Loading…</div>
 </div>
 
+<!-- CAMERA -->
 <div class="screen" id="s-cam">
-  <div class="badge">SNAP &amp; SHARE</div>
-  <div class="cam-wrap">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="cam-overlay"></div>
+  <div class="top-bar">
+    <div class="brand-tag">⚡ Scoreboard</div>
+    <div class="match-badge"><div class="badge-dot"></div><div class="match-name" id="match-name">SNAP &amp; SHARE</div></div>
   </div>
-  <div class="cam-hint">Your selfie will appear on the big screen!</div>
-  <div class="btn-row">
-    <button class="btn btn-gold" id="snap-btn" onclick="snap()">📸 Take Selfie</button>
+  <div class="cam-outer">
+    <div class="cam-frame">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="vf-c vf-tl"></div><div class="vf-c vf-tr"></div>
+      <div class="vf-c vf-bl"></div><div class="vf-c vf-br"></div>
+      <div class="cd-ov" id="cd-ov"><div class="cd-num" id="cd-num">3</div></div>
+      <div class="flash-ov" id="flash-ov"></div>
+    </div>
+  </div>
+  <div class="cam-controls">
+    <button class="shutter" id="snap-btn" onclick="snap()">📸</button>
+    <div class="hint-txt">Your selfie will appear on the big screen!</div>
   </div>
 </div>
 
+<!-- PREVIEW -->
 <div class="screen" id="s-preview">
-  <div class="badge">SNAP &amp; SHARE</div>
-  <div class="preview-wrap">
-    <canvas id="canvas"></canvas>
+  <div class="top-bar">
+    <div class="brand-tag">⚡ Scoreboard</div>
+    <div class="match-badge"><div class="badge-dot"></div><div class="match-name" id="match-name-2">SNAP &amp; SHARE</div></div>
   </div>
-  <div class="btn-row">
-    <button class="btn btn-ghost" onclick="retake()">Retake</button>
-    <button class="btn btn-gold" id="submit-btn" onclick="submit()">Submit!</button>
+  <div class="preview-outer">
+    <div class="preview-label">Looking good?</div>
+    <div class="preview-frame"><canvas id="canvas"></canvas></div>
+  </div>
+  <div class="preview-controls">
+    <button class="btn btn-ghost" onclick="retake()">↩ Retake</button>
+    <button class="btn btn-gold" id="submit-btn" onclick="submit()">Submit! →</button>
   </div>
 </div>
 
-<div class="screen" id="s-uploading">
-  <div class="up-spinner"></div>
+<!-- UPLOADING -->
+<div class="screen" id="s-uploading" style="justify-content:center;">
+  <div class="up-ring"></div>
   <div class="up-txt">Uploading your selfie…</div>
 </div>
 
-<div class="screen" id="s-thanks">
-  <div class="badge">YOU'RE ON AIR!</div>
-  <div class="thanks-icon">🎉</div>
-  <div class="thanks-head">You're on the big screen!</div>
-  <div class="thanks-sub">Watch for your photo to appear.<br>Thanks for being part of the show!</div>
+<!-- THANKS -->
+<div class="screen thanks-screen" id="s-thanks">
+  <div class="confetti-wrap" id="confetti-wrap"></div>
+  <div class="thanks-inner">
+    <div class="thanks-icon-ring">🎉</div>
+    <div class="thanks-badge" id="thanks-badge">You're on air!</div>
+    <div class="thanks-head" id="thanks-head">You're Famous!</div>
+    <div class="thanks-sub" id="thanks-sub">Watch the big screen — your photo is live right now. Thanks for being part of the show!</div>
+  </div>
 </div>
 
-<div class="screen" id="s-closed">
-  <div class="closed-icon">📸</div>
-  <div class="closed-head">Selfie Cam isn't live yet</div>
-  <div class="closed-sub">Keep an eye on the big screen<br>and scan the QR when it appears!</div>
+<!-- CLOSED -->
+<div class="screen closed-screen" id="s-closed">
+  <div class="closed-inner">
+    <div class="closed-icon-ring">📸</div>
+    <div class="closed-head">Not Live Yet</div>
+    <div class="closed-sub">Selfie Cam isn't active right now. Keep an eye on the big screen and scan the QR when it appears!</div>
+  </div>
 </div>
 
 <script>
 const MAX_DIM = 900;
-let stream = null;
-let capturedBlob = null;
+let stream = null, capturedBlob = null, _countingDown = false;
 
 function show(id) {
   ['s-loading','s-cam','s-preview','s-uploading','s-thanks','s-closed'].forEach(s => {
     document.getElementById(s).classList.toggle('on', s === id);
   });
+  if (id === 's-thanks') launchConfetti();
 }
 
 async function checkActive() {
@@ -115,16 +193,15 @@ async function checkActive() {
     const r = await fetch('/state', { cache: 'no-store' });
     if (!r.ok) throw new Error();
     const st = await r.json();
+    let label = 'SNAP & SHARE';
+    if (st.homeTeam && st.awayTeam) label = `${st.homeTeam} vs ${st.awayTeam}`;
+    else if (st.leagueName) label = st.leagueName;
+    document.getElementById('match-name').textContent = label;
+    document.getElementById('match-name-2').textContent = label;
     const sw = st.selfieWall || {};
-    if (!sw.active) {
-      show('s-closed');
-      return false;
-    }
+    if (!sw.active) { show('s-closed'); return false; }
     return true;
-  } catch {
-    show('s-closed');
-    return false;
-  }
+  } catch { show('s-closed'); return false; }
 }
 
 async function startCamera() {
@@ -136,26 +213,20 @@ async function startCamera() {
     document.getElementById('video').srcObject = stream;
     show('s-cam');
   } catch {
-    // fallback: file picker
     show('s-cam');
-    document.getElementById('snap-btn').textContent = '📷 Choose Photo';
-    document.getElementById('snap-btn').onclick = pickFile;
+    const btn = document.getElementById('snap-btn');
+    btn.textContent = '📷';
+    btn.onclick = pickFile;
   }
 }
 
 function pickFile() {
   const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'user';
+  input.type = 'file'; input.accept = 'image/*'; input.capture = 'user';
   input.onchange = () => {
     if (!input.files[0]) return;
     const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => drawToCanvas(img);
-      img.src = e.target.result;
-    };
+    reader.onload = e => { const img = new Image(); img.onload = () => drawToCanvas(img); img.src = e.target.result; };
     reader.readAsDataURL(input.files[0]);
   };
   input.click();
@@ -164,45 +235,53 @@ function pickFile() {
 function snap() {
   const video = document.getElementById('video');
   if (!video.srcObject) { pickFile(); return; }
-  const w = video.videoWidth || 640;
-  const h = video.videoHeight || 480;
-  drawToCanvas(video, w, h);
+  if (_countingDown) return;
+  _countingDown = true;
+  document.getElementById('snap-btn').disabled = true;
+  runCountdown(3);
+}
+
+function runCountdown(n) {
+  const ov = document.getElementById('cd-ov');
+  if (n === 0) { ov.classList.remove('on'); doSnap(); return; }
+  // Re-trigger animation
+  const old = document.getElementById('cd-num');
+  const fresh = old.cloneNode(false);
+  fresh.id = 'cd-num'; fresh.textContent = n;
+  old.parentNode.replaceChild(fresh, old);
+  ov.classList.add('on');
+  setTimeout(() => runCountdown(n - 1), 920);
+}
+
+function doSnap() {
+  const flash = document.getElementById('flash-ov');
+  flash.classList.add('on');
+  setTimeout(() => flash.classList.remove('on'), 160);
+  const video = document.getElementById('video');
+  drawToCanvas(video, video.videoWidth || 640, video.videoHeight || 480);
+  _countingDown = false;
+  document.getElementById('snap-btn').disabled = false;
 }
 
 function drawToCanvas(source, srcW, srcH) {
   const canvas = document.getElementById('canvas');
-  // crop to 3:4
   srcW = srcW || source.naturalWidth || source.width;
   srcH = srcH || source.naturalHeight || source.height;
   let cropW = srcW, cropH = Math.round(srcW * 4 / 3);
   if (cropH > srcH) { cropH = srcH; cropW = Math.round(srcH * 3 / 4); }
-  const sx = Math.round((srcW - cropW) / 2);
-  const sy = Math.round((srcH - cropH) / 2);
-
-  // output dims
+  const sx = Math.round((srcW - cropW) / 2), sy = Math.round((srcH - cropH) / 2);
   let outW = cropW, outH = cropH;
   if (outW > MAX_DIM) { outH = Math.round(outH * MAX_DIM / outW); outW = MAX_DIM; }
   if (outH > Math.round(MAX_DIM * 4 / 3)) { outW = Math.round(outW * Math.round(MAX_DIM * 4 / 3) / outH); outH = Math.round(MAX_DIM * 4 / 3); }
-
-  canvas.width = outW;
-  canvas.height = outH;
+  canvas.width = outW; canvas.height = outH;
   const ctx = canvas.getContext('2d');
-  ctx.save();
-  ctx.translate(outW, 0);
-  ctx.scale(-1, 1); // mirror to match preview
+  ctx.save(); ctx.translate(outW, 0); ctx.scale(-1, 1);
   ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, outW, outH);
   ctx.restore();
-
-  canvas.toBlob(blob => {
-    capturedBlob = blob;
-    show('s-preview');
-  }, 'image/jpeg', 0.85);
+  canvas.toBlob(blob => { capturedBlob = blob; show('s-preview'); }, 'image/jpeg', 0.85);
 }
 
-function retake() {
-  capturedBlob = null;
-  show('s-cam');
-}
+function retake() { capturedBlob = null; show('s-cam'); }
 
 async function submit() {
   if (!capturedBlob) return;
@@ -217,13 +296,17 @@ async function submit() {
     });
     if (!r.ok) throw new Error();
     const data = await r.json();
-    show('s-thanks');
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     if (data.pending) {
-      document.querySelector('#s-thanks .thanks-head').textContent = 'Photo submitted!';
-      document.querySelector('#s-thanks .thanks-sub').textContent = 'Your photo is being reviewed. If approved it will appear on screen shortly!';
-      document.querySelector('#s-thanks .badge').textContent = 'SUBMITTED';
+      document.getElementById('thanks-badge').textContent = 'SUBMITTED';
+      document.getElementById('thanks-head').textContent = 'Under Review!';
+      document.getElementById('thanks-sub').textContent = 'Your photo is being reviewed. If approved it will appear on the big screen shortly!';
+    } else {
+      document.getElementById('thanks-badge').textContent = "YOU'RE ON AIR!";
+      document.getElementById('thanks-head').textContent = "You're Famous!";
+      document.getElementById('thanks-sub').textContent = 'Watch the big screen — your photo is live right now. Thanks for being part of the show!';
     }
+    show('s-thanks');
   } catch {
     show('s-preview');
     document.getElementById('submit-btn').disabled = false;
@@ -240,11 +323,30 @@ function blobToDataUrl(blob) {
   });
 }
 
+function launchConfetti() {
+  const wrap = document.getElementById('confetti-wrap');
+  wrap.innerHTML = '';
+  const colors = ['#f5c842','#f87171','#60a5fa','#34d399','#a78bfa','#fb923c','#fff'];
+  for (let i = 0; i < 65; i++) {
+    const el = document.createElement('div');
+    const size = 6 + Math.random() * 8;
+    const isStrip = Math.random() > .5;
+    el.style.cssText = [
+      `position:absolute;top:-14px;left:${Math.random()*100}%`,
+      `width:${size}px;height:${isStrip ? size * 2.6 : size}px`,
+      `background:${colors[Math.floor(Math.random()*colors.length)]}`,
+      `border-radius:${isStrip ? '2px' : '50%'}`,
+      `opacity:0;transform:rotate(${Math.random()*360}deg)`,
+      `animation:confetti-fall ${2.2+Math.random()*1.6}s ${Math.random()*1.4}s ease-in forwards`,
+    ].join(';');
+    wrap.appendChild(el);
+  }
+}
+
 async function init() {
   const active = await checkActive();
   if (active) await startCamera();
 }
-
 init();
 </script>
 </body>

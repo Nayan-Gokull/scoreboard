@@ -2053,6 +2053,11 @@
       </div>
 
       <div class="sdb-foot">
+        <div id="sb-game-code" style="display:none;margin-bottom:9px;padding:7px 10px;background:rgba(245,200,66,.07);border:1px solid rgba(245,200,66,.22);border-radius:7px;text-align:center;">
+          <div style="font-size:.58rem;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-bottom:3px;">Game Code</div>
+          <div id="sb-game-code-val" style="font-family:monospace;font-size:1.25rem;font-weight:700;color:var(--gold);letter-spacing:.28em;">——</div>
+          <div id="sb-game-code-note" style="font-size:.6rem;color:var(--dim);margin-top:2px;display:none;">Code gate off</div>
+        </div>
         <button class="sb-game-btn state-new" id="sb-game-btn" onclick="sbGameAction()">＋ New Game</button>
         <div class="user-pill">
           <div class="user-dot"></div><span id="sb-user-name">—</span><span style="color:var(--acc);margin-left:5px;" id="sb-user-role"></span>
@@ -2717,20 +2722,6 @@
           </div>
         </div>
 
-        <div class="card admin-only">
-          <div class="ct">🔒 Display Access Token</div>
-          <p style="font-size:.82rem;color:var(--dim);margin-bottom:11px;">When set, the broadcast display screen requires a token in its URL. Leave empty to allow anyone with the URL to view the display.</p>
-          <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
-            <div class="fg" style="flex:1;"><label>Display Token</label><input type="text" id="disp-token-i" placeholder="Leave empty for open access" autocomplete="off"></div>
-            <button class="btn btn-acc btn-sm" onclick="saveDisplayToken()">Save</button>
-            <button class="btn btn-dg btn-sm" onclick="genDisplayToken()">Generate</button>
-          </div>
-          <div id="disp-token-url" style="display:none;background:var(--sur2);border:1px solid var(--bd);border-radius:7px;padding:10px 13px;font-size:.78rem;word-break:break-all;margin-bottom:4px;">
-            <span style="color:var(--dim);display:block;margin-bottom:4px;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;">Display URL with token</span>
-            <span id="disp-token-url-text" style="color:var(--gold);font-family:monospace;"></span>
-            <button class="btn btn-gh btn-xs" style="margin-left:10px;" onclick="copyDisplayUrl()">Copy</button>
-          </div>
-        </div>
       </div>
 
       <!-- ══ SHORTCUTS ══ -->
@@ -2925,6 +2916,17 @@
           <div style="font-size:.76rem;color:var(--dim);margin-bottom:10px;">Approve photos to show them on screen, or reject to discard.</div>
           <div id="sw-pending-gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:360px;overflow-y:auto;padding:2px;">
             <div style="color:var(--dim);font-size:.8rem;grid-column:1/-1;text-align:center;padding:24px 0;">No pending photos.</div>
+          </div>
+        </div>
+
+        <!-- Reveal sponsor -->
+        <div class="card">
+          <div class="ct">Selfie Reveal Sponsor</div>
+          <p style="font-size:.8rem;color:var(--dim);margin-bottom:11px;">Logo shown as "Powered by" when each selfie reveals fullscreen on the big display. Rendered on a clean white background — no overlays.</p>
+          <div class="upw" style="height:64px;" id="sw-sp-up">
+            <input type="file" accept="image/*" onchange="uploadSwSponsor(this)">
+            <div class="ui">🏷️</div>
+            <div class="uh">Upload sponsor logo</div>
           </div>
         </div>
 
@@ -3155,7 +3157,7 @@
       basketball: {
         label: 'BASKETBALL', periods: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
         scoreBtns: [{ l: '+3', v: 3, hk: '3', ak: '⇧3' }, { l: '+2', v: 2, hk: '2', ak: '⇧2' }, { l: '+1', v: 1, hk: '1', ak: '⇧1' }], sk: ['hFouls', 'aFouls', 'hTO', 'aTO'], sl: ['H Fouls', 'A Fouls', 'H TO', 'A TO'],
-        extras: [{ id: 'hFouls', l: 'H Fouls' }, { id: 'aFouls', l: 'A Fouls' }, { id: 'hTO', l: 'H TO' }, { id: 'aTO', l: 'A TO' }], cel: 'SCORE!'
+        extras: [{ id: 'hFouls', l: 'H Fouls' }, { id: 'aFouls', l: 'A Fouls' }, { id: 'hTO', l: 'H TO' }, { id: 'aTO', l: 'A TO' }], cel: 'SLAM DUNK!'
       },
       rugby: {
         label: 'RUGBY', periods: ['1ST HALF', '2ND HALF', 'EXTRA TIME 1', 'EXTRA TIME 2'],
@@ -3163,12 +3165,12 @@
         extras: [{ id: 'hYellow', l: 'H Yellow' }, { id: 'aYellow', l: 'A Yellow' }], cel: 'TRY!'
       },
     };
-    const CEL = { goal: 'GOAL!', try: 'TRY!', basket: 'SCORE!', penalty: 'PENALTY!', owngoal: 'OWN GOAL', yellowcard: 'YELLOW CARD', redcard: 'RED CARD', sub: 'SUBSTITUTION', foul: 'FOUL', other: 'EVENT' };
+    const CEL = { goal: 'GOAL!', try: 'TRY!', basket: 'SLAM DUNK!', penalty: 'PENALTY!', owngoal: 'OWN GOAL', yellowcard: 'YELLOW CARD', redcard: 'RED CARD', sub: 'SUBSTITUTION', foul: 'FOUL', other: 'EVENT' };
     const EICO = { goal: '⚽', try: '🏉', basket: '🏀', penalty: '🎯', owngoal: '🔄', yellowcard: '🟨', redcard: '🟥', sub: '🔁', foul: '⚠️', other: '📋' };
     const SCORE_EVENTS = new Set(['goal', 'owngoal', 'try', 'conversion', 'basket', 'penalty', 'drop']);
     const SPORT_EVENT_OPTS = {
       soccer:     [{v:'goal',l:'⚽ Goal'},{v:'penalty',l:'🎯 Penalty'},{v:'owngoal',l:'🔄 Own Goal'},{v:'yellowcard',l:'🟨 Yellow Card'},{v:'redcard',l:'🟥 Red Card'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
-      basketball: [{v:'basket',l:'🏀 Basket'},{v:'foul',l:'⚠️ Foul'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
+      basketball: [{v:'basket',l:'🏀 Slam Dunk'},{v:'foul',l:'⚠️ Foul'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
       rugby:      [{v:'try',l:'🏉 Try'},{v:'penalty',l:'🎯 Penalty'},{v:'yellowcard',l:'🟨 Yellow Card'},{v:'redcard',l:'🟥 Red Card'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
     };
     const CICO = { announcement: '📣', lowerthird: '📺', halftime: '🏟️', nextperiod: '⏭️', startclock: '▶', stopclock: '⏸', showbug: '🔲', hidebug: '✕', videoon: '🎥', videooff: '📴', adstart: '▶', adnext: '⏭️', adstop: '■', note: '📝' };
@@ -3193,7 +3195,7 @@
       qrOverlay: { active: false, url: '', headline: '', subtext: '', label: '', seq: 0 },
       poll: { active: false, question: '', options: [], votes: {}, seq: 0 },
       pollResultsOverlay: { active: false, seq: 0 },
-      selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false },
+      selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false, sponsorLogo: '' },
     };
     let S = Object.assign({}, DEF);
     let PLAYERS = { home: [], away: [] };
@@ -3296,7 +3298,14 @@
 
     // ── NAV ────────────────────────────────────────────────────────────────────
     function toggleGroup(id) {
-      document.getElementById(id).classList.toggle('collapsed');
+      const target = document.getElementById(id);
+      const isCollapsed = target.classList.contains('collapsed');
+      if (isCollapsed) {
+        document.querySelectorAll('.nav-group').forEach(g => g.classList.add('collapsed'));
+        target.classList.remove('collapsed');
+      } else {
+        target.classList.add('collapsed');
+      }
     }
 
     function nav(id, el) {
@@ -3541,10 +3550,25 @@
       es.onerror = () => { es.close(); setTimeout(connectSSE, Math.min(5000, 500 * Math.pow(1.5, esRetry++))); };
     }
 
+    function updateGameCodeDisplay() {
+      const wrap = document.getElementById('sb-game-code');
+      const val  = document.getElementById('sb-game-code-val');
+      const note = document.getElementById('sb-game-code-note');
+      if (!wrap || !val) return;
+      if (S.gameCode) {
+        wrap.style.display = '';
+        val.textContent = S.gameCode;
+        if (note) { note.style.display = S.requireGameCode ? 'none' : ''; }
+      } else {
+        wrap.style.display = 'none';
+      }
+    }
+
     function applyFromServer() {
       // Update UI from incoming state without overwriting form inputs currently focused
       updateScUI();
       updateGameControl();
+      updateGameCodeDisplay();
       const cfg = SPORTS[S.sport] || SPORTS.soccer;
       const pi = Math.max(0, Math.min(S.period || 0, cfg.periods.length - 1));
       document.getElementById('pv-per').textContent = cfg.periods[pi] || '—';
@@ -3625,7 +3649,7 @@
       const ev = { id: Date.now(), type: evType, side: mdSide, player: name, time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
       S.events.push(ev);
       updatePlayerStat(name, evType);
-      S.celebration = { text: CEL[evType] || SPORTS[S.sport].cel, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+      S.celebration = { text: CEL[evType] || SPORTS[S.sport].cel, type: evType, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
       S.lowerThird  = { type: (EICO[evType] || '📋') + ' ' + evType.toUpperCase(), main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
       closeMd(); await save(); renderEvs(); updateScUI(); renderPlayerStats();
       toast(isScoring ? `${teamName} +${mdVal}` : `${teamName}: ${evType}`);
@@ -3748,6 +3772,8 @@
     // ── CELEBRATION SPONSOR ────────────────────────────────────────────────────
     async function uploadCelSponsor(input) { const file = input.files[0]; if (!file) return; const url = await uploadToServer('sponsors', file.name, file); if (!url) return; S.celebSponsor = url; showUploadPreview('cel-sp-up', url, false, file.name); await pushState(); toast('Goal sponsor set'); }
     async function clearCelSponsor(e) { e.stopPropagation(); S.celebSponsor = ''; resetWrap('cel-sp-up'); await pushState(); toast('Goal sponsor cleared'); }
+    async function uploadSwSponsor(input) { const file = input.files[0]; if (!file) return; const url = await uploadToServer('sponsors', file.name, file); if (!url) return; if (!S.selfieWall) S.selfieWall = {}; S.selfieWall.sponsorLogo = url; showUploadPreview('sw-sp-up', url, false, file.name); await save(); toast('Selfie sponsor set'); }
+    async function clearSwSponsor(e) { e.stopPropagation(); if (!S.selfieWall) S.selfieWall = {}; S.selfieWall.sponsorLogo = ''; resetWrap('sw-sp-up'); await save(); toast('Selfie sponsor cleared'); }
 
     // ── TEAMS ──────────────────────────────────────────────────────────────────
     function syncTeams() { S.homeTeam = document.getElementById('h-name-i').value || 'Team 1'; S.awayTeam = document.getElementById('a-name-i').value || 'Team 2'; syncTeamsUI(); }
@@ -3974,35 +4000,7 @@
         const r = await fetch('/api/config'); if (!r.ok) return;
         const cfg = await r.json();
         if (cfg.broadcastToken) document.getElementById('xml-token-i').value = cfg.broadcastToken;
-        const dt = cfg.displayToken || '';
-        document.getElementById('disp-token-i').value = dt;
-        updateDisplayTokenUrl(dt);
       } catch { }
-    }
-    function updateDisplayTokenUrl(token) {
-      const box = document.getElementById('disp-token-url');
-      const txt = document.getElementById('disp-token-url-text');
-      if (token) {
-        const url = window.location.origin + '/display?token=' + encodeURIComponent(token);
-        txt.textContent = url;
-        box.style.display = 'block';
-      } else {
-        box.style.display = 'none';
-      }
-    }
-    async function saveDisplayToken() {
-      const token = document.getElementById('disp-token-i').value.trim();
-      const r = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayToken: token }) });
-      if (r.ok) { updateDisplayTokenUrl(token); toast(token ? 'Display token saved' : 'Display token cleared — display is now public'); }
-      else toast('Failed to save', true);
-    }
-    function genDisplayToken() {
-      const t = Array.from(crypto.getRandomValues(new Uint8Array(18))).map(b => b.toString(36)).join('').slice(0, 24);
-      document.getElementById('disp-token-i').value = t;
-    }
-    function copyDisplayUrl() {
-      const txt = document.getElementById('disp-token-url-text').textContent;
-      navigator.clipboard.writeText(txt).then(() => toast('URL copied')).catch(() => toast('Copy failed', true));
     }
     async function saveXmlToken() {
       const token = document.getElementById('xml-token-i').value.trim();
@@ -4185,7 +4183,7 @@
 
       document.querySelectorAll('.sp-tab').forEach(t => t.classList.remove('active'));
       const sp = S.sport || 'soccer'; document.getElementById('tab-' + sp).classList.add('active');
-      buildSportUI(); renderSponsors(); renderEvs(); renderTimeline(); renderCues(); updateScUI(); syncTeamsUI(); updateGameControl();
+      buildSportUI(); renderSponsors(); renderEvs(); renderTimeline(); renderCues(); updateScUI(); syncTeamsUI(); updateGameControl(); updateGameCodeDisplay();
       renderPlayers();
       updatePlayerDroplists();
       // Restore logos
@@ -4471,6 +4469,8 @@
       if(chk)chk.checked=reqApproval;
       const modCard=document.getElementById('sw-mod-card');
       if(modCard)modCard.style.display=reqApproval?'':'none';
+      const spLogo=S.selfieWall&&S.selfieWall.sponsorLogo;
+      if(spLogo)showUploadPreview('sw-sp-up',spLogo,false,'');
     }
     async function refreshSelfieGallery(){
       try{

@@ -303,6 +303,19 @@ input.invalid,select.invalid{border-color:var(--red);box-shadow:0 0 0 3px rgba(2
     <div class="card" style="margin-bottom:0;">
       <div class="card-title">Launch Options</div>
 
+      <!-- Game Code toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0 14px;border-bottom:1px solid var(--bd);margin-bottom:14px;">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.92rem;color:var(--txt);margin-bottom:2px;">🔒 Require Game Code on Display</div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:.76rem;color:var(--dim);line-height:1.5;">Display screen prompts for a 6-digit code before going live. Turn off if the display device can't be accessed directly.</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:26px;flex-shrink:0;cursor:pointer;">
+          <input type="checkbox" id="f-require-code" checked style="opacity:0;width:0;height:0;position:absolute;">
+          <span id="f-require-code-pill" style="position:absolute;inset:0;background:rgba(255,255,255,.12);border-radius:13px;transition:background .2s;"></span>
+          <span id="f-require-code-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></span>
+        </label>
+      </div>
+
       <!-- Go Live -->
       <button class="btn btn-grn btn-full" id="btnLive" onclick="launch('live')" style="margin-bottom:12px;">
         🚀 Go Live Now — Start this match immediately
@@ -329,6 +342,20 @@ input.invalid,select.invalid{border-color:var(--red);box-shadow:0 0 0 3px rgba(2
 <script>
 let selectedSport = 'soccer';
 const sportIcons = {soccer:'⚽',basketball:'🏀',rugby:'🏉'};
+
+// Game code toggle — label wraps the checkbox, so clicks propagate natively; just sync visuals on change
+document.addEventListener('DOMContentLoaded', () => {
+  const cb = document.getElementById('f-require-code');
+  const pill = document.getElementById('f-require-code-pill');
+  const knob = document.getElementById('f-require-code-knob');
+  if (!cb) return;
+  function syncToggle() {
+    pill.style.background = cb.checked ? 'var(--acc)' : 'rgba(255,255,255,.12)';
+    knob.style.transform = cb.checked ? 'translateX(18px)' : 'translateX(0)';
+  }
+  syncToggle();
+  cb.addEventListener('change', syncToggle);
+});
 
 function setSport(s) {
   selectedSport = s;
@@ -453,6 +480,7 @@ async function launch(mode) {
     homeRecord: v('f-hrec'),
     awayRecord: v('f-arec'),
     gameStatus: mode === 'live' ? 'LIVE' : 'SETUP',
+    requireGameCode: document.getElementById('f-require-code')?.checked !== false,
   };
 
   const btnLive = document.getElementById('btnLive');
