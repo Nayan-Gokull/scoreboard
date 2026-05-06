@@ -2926,9 +2926,9 @@
             </div>
             <div id="sw-ip-hint" style="font-size:.74rem;color:var(--dim);margin-top:5px;line-height:1.6;"></div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">
-            <button class="btn btn-grn btn-f" onclick="activateSelfieWall()">▶ Activate Selfie Wall</button>
-            <button class="btn btn-dg btn-f" onclick="deactivateSelfieWall()">■ Deactivate</button>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+            <button class="btn btn-grn" style="flex:1;" onclick="activateSelfieWall()">▶ Activate Selfie Wall</button>
+            <button class="btn btn-dg" style="flex:1;" onclick="deactivateSelfieWall()">■ Deactivate</button>
             <label class="sw-tog" title="When on, uploaded photos wait for operator approval before appearing on screen">
               <input type="checkbox" id="sw-require-approval" onchange="saveSelfieApprovalSetting()">
               <span class="sw-tog-pill"></span>
