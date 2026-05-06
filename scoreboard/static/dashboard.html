@@ -1971,7 +1971,6 @@
             <div class="ni" onclick="nav('timer',this)"><span class="ni-ic">⏱️</span> Timer</div>
             <div class="ni admin-only" onclick="nav('events',this)"><span class="ni-ic">📜</span> Event Log</div>
             <div class="ni admin-only" onclick="nav('players',this)"><span class="ni-ic">👥</span> Players</div>
-            <div class="ni" onclick="nav('game',this)"><span class="ni-ic">📋</span> Game Info</div>
             <div class="ni" onclick="nav('teams',this)"><span class="ni-ic">🛡️</span> Teams</div>
             <div class="ni" onclick="nav('stats',this)"><span class="ni-ic">📊</span> Stats</div>
           </div>
@@ -2014,8 +2013,6 @@
             <div class="ni op" onclick="nav('cuelist',this)"><span class="ni-ic">📋</span> Cue List</div>
             <div class="ni op" onclick="nav('videosrc',this)"><span class="ni-ic">🎥</span> Video Source</div>
             <div class="ni" onclick="nav('xmlfeed',this)"><span class="ni-ic">📡</span> XML Feed</div>
-            <div class="ni" onclick="nav('shortcuts',this)"><span class="ni-ic">⌨️</span> Shortcuts</div>
-            <div class="ni" onclick="nav('export',this)"><span class="ni-ic">📄</span> Export</div>
           </div>
         </div>
 
@@ -2028,6 +2025,18 @@
           <div class="nav-items">
             <div class="ni" onclick="nav('fixtures',this)"><span class="ni-ic">📅</span> Fixtures</div>
             <div class="ni" onclick="nav('history',this)"><span class="ni-ic">📚</span> History</div>
+          </div>
+        </div>
+
+        <!-- TOOLS GROUP -->
+        <div class="nav-group collapsed" id="ng-tools">
+          <div class="nav-sec" onclick="toggleGroup('ng-tools')">
+            <span class="ns-label">Tools</span>
+            <span class="ns-arrow">▾</span>
+          </div>
+          <div class="nav-items">
+            <div class="ni" onclick="nav('shortcuts',this)"><span class="ni-ic">⌨️</span> Shortcuts</div>
+            <div class="ni" onclick="nav('export',this)"><span class="ni-ic">📄</span> Export</div>
           </div>
         </div>
 
@@ -2165,7 +2174,6 @@
             <button class="btn btn-gh" onclick="nextPer()">⏭️ Next Period</button>
             <button class="btn btn-gh" onclick="swapPoss()">↔️ Swap Poss.</button>
             <button class="btn btn-gh" onclick="resetEx()">🔄 Reset Extras</button>
-            <button class="btn btn-dg admin-only" onclick="finalizeGame()" style="grid-column:span 2;">🗄 Archive & Finish Match</button>
             <button class="btn btn-dg admin-only" onclick="fullReset()">🗑 Reset</button>
           </div>
         </div>
@@ -2188,13 +2196,12 @@
         </div>
         <div class="card">
           <div class="ct">Set Timer</div>
-          <div class="g3" style="align-items:end;">
+          <div class="g3" style="align-items:end;margin-bottom:11px;">
             <div class="fg"><label>Minutes</label><input type="number" id="set-m" value="45" min="0" max="999"></div>
             <div class="fg"><label>Seconds</label><input type="number" id="set-s" value="0" min="0" max="59"></div>
             <button class="btn btn-acc" onclick="applyTimer()" style="align-self:flex-end;height:34px;">Set</button>
           </div>
-          <div class="hr"></div>
-          <div class="qg">
+          <div class="qg" style="margin-bottom:14px;">
             <button class="btn btn-gh btn-sm" onclick="qTimer(45*60)">45 min</button>
             <button class="btn btn-gh btn-sm" onclick="qTimer(12*60)">12 min (BBall)</button>
             <button class="btn btn-gh btn-sm" onclick="qTimer(40*60)">40 min (Rugby)</button>
@@ -2202,11 +2209,9 @@
             <button class="btn btn-gh btn-sm" onclick="qTimer(5*60)">5 min</button>
             <button class="btn btn-gh btn-sm" onclick="qTimer(90)">90 sec</button>
           </div>
-        </div>
-        <div class="card">
-          <div class="ct">Manual Override</div>
-          <div style="display:flex;gap:7px;"><input type="text" id="man-clk" placeholder="e.g. 87+3 or HT"
-              style="flex:1;"><button class="btn btn-acc" onclick="manClk()">Apply</button></div>
+          <div class="ct" style="margin-bottom:9px;">Manual Override</div>
+          <div style="display:flex;gap:7px;"><input type="text" id="man-clk" placeholder="e.g. 87+3 or HT" style="flex:1;"><button class="btn btn-acc" onclick="manClk()">Apply</button></div>
+          <div style="font-size:.72rem;color:var(--dim);margin-top:6px;">Override the displayed clock text without affecting the running timer.</div>
         </div>
       </div>
 
@@ -2245,33 +2250,17 @@
         </div>
       </div>
 
-      <!-- ══ GAME INFO ══ -->
-      <div class="page" id="page-game">
-        <div class="pt">📋 <span>Game</span> Info</div>
-        <div class="card">
-          <div class="g2" style="margin-bottom:11px;">
-            <div class="fg"><label>League / Event</label><input type="text" id="league-i" value="UNIVERSITY LEAGUE"
-                oninput="save()"></div>
-            <div class="fg"><label>Date</label><input type="text" id="date-i" value="—" oninput="save()"></div>
-          </div>
-          <div class="g2">
-            <div class="fg"><label>Venue</label><input type="text" id="loc-i" value="—" oninput="save()"></div>
-            <div class="fg"><label>Status</label><select id="st-sel2" onchange="syncSt()">
-                <option>SETUP</option>
-                <option>LIVE</option>
-                <option>HALFTIME</option>
-                <option>IDEAL</option>
-                <option>FINAL</option>
-                <option>DELAY</option>
-                <option>PRE-GAME</option>
-              </select></div>
-          </div>
-        </div>
-      </div>
-
       <!-- ══ TEAMS ══ -->
       <div class="page" id="page-teams">
         <div class="pt">🛡️ <span>Team</span> Settings</div>
+        <div class="card">
+          <div class="ct">Match Info</div>
+          <div class="g3">
+            <div class="fg"><label>League / Event</label><input type="text" id="league-i" value="UNIVERSITY LEAGUE" oninput="save()"></div>
+            <div class="fg"><label>Date</label><input type="text" id="date-i" value="—" oninput="save()"></div>
+            <div class="fg"><label>Venue</label><input type="text" id="loc-i" value="—" oninput="save()"></div>
+          </div>
+        </div>
         <div class="g-vs">
           <div class="card" style="margin-bottom:0;">
             <div class="ct">Home Team</div>
@@ -2325,38 +2314,40 @@
           <button class="btn btn-gh btn-sm" onclick="addSponsor()">+ Add Sponsor</button>
         </div>
         <div class="card">
-          <div class="ct">Papare Branding <span style="font-size:.64rem;font-weight:400;color:var(--dim);margin-left:6px;">Your production credit — always visible in the sponsor bar</span></div>
-          <div class="g2" style="align-items:start;">
-            <div class="fg"><label>Team Logo</label>
-              <div class="upw" style="height:72px;border-radius:4px;" id="papare-logo-up">
-                <input type="file" accept="image/*" onchange="uploadPapareLogo(this)">
-                <div class="ui">🎬</div>
-                <div class="uh">Upload logo</div>
-                <button class="cb" onclick="clearPapareLogo(event)">✕</button>
+          <div class="ct">Branding</div>
+          <div class="g2" style="align-items:start;margin-bottom:14px;">
+            <div>
+              <div style="font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">Production Credit</div>
+              <div class="g2" style="align-items:start;">
+                <div class="fg">
+                  <div class="upw" style="height:60px;border-radius:4px;" id="papare-logo-up">
+                    <input type="file" accept="image/*" onchange="uploadPapareLogo(this)">
+                    <div class="ui" style="font-size:1.1rem;">🎬</div>
+                    <div class="uh">Logo</div>
+                    <button class="cb" onclick="clearPapareLogo(event)">✕</button>
+                  </div>
+                </div>
+                <div class="fg">
+                  <label>Name</label>
+                  <input type="text" id="papare-txt" value="PAPARE" placeholder="PAPARE" oninput="S.papare={...(S.papare||{}),text:this.value};save()">
+                  <div style="display:flex;gap:5px;margin-top:6px;">
+                    <button class="btn btn-gh btn-xs" onclick="setPapareVisible(true)">Show</button>
+                    <button class="btn btn-dg btn-xs" onclick="setPapareVisible(false)">Hide</button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="fg"><label>Display Name</label>
-              <input type="text" id="papare-txt" value="PAPARE" placeholder="PAPARE" oninput="S.papare={...(S.papare||{}),text:this.value};save()">
-              <div style="font-size:.72rem;color:var(--dim);margin-top:6px;line-height:1.55;">Shown as a subtle credit on the right of the sponsor bar. If a logo is uploaded it replaces the text.</div>
-              <div class="btn-row" style="margin-top:10px;">
-                <button class="btn btn-gh btn-xs" onclick="setPapareVisible(true)">Show</button>
-                <button class="btn btn-dg btn-xs" onclick="setPapareVisible(false)">Hide</button>
+            <div>
+              <div style="font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;">Celebration Sponsor</div>
+              <div class="fg">
+                <div class="upw" style="height:60px;border-radius:4px;" id="cel-sp-up">
+                  <input type="file" accept="image/*" onchange="uploadCelSponsor(this)">
+                  <div class="ui" style="font-size:1.1rem;">🏆</div>
+                  <div class="uh">Shown on goal overlay</div>
+                  <button class="cb" onclick="clearCelSponsor(event)">✕</button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ct">Goal Sponsor <span style="font-size:.64rem;font-weight:400;color:var(--dim);margin-left:6px;">Shown on goal / event celebration overlay</span></div>
-          <div class="g2" style="align-items:start;">
-            <div class="fg"><label>Sponsor Logo</label>
-              <div class="upw" style="height:72px;border-radius:4px;" id="cel-sp-up">
-                <input type="file" accept="image/*" onchange="uploadCelSponsor(this)">
-                <div class="ui">🏆</div>
-                <div class="uh">Upload logo</div>
-                <button class="cb" onclick="clearCelSponsor(event)">✕</button>
-              </div>
-            </div>
-            <div style="font-size:.76rem;color:var(--dim);line-height:1.65;padding-top:26px;">Most premium slot — full-screen branded moment every time a goal or event is registered. Logo auto-filtered white for broadcast look.</div>
           </div>
         </div>
       </div>
@@ -2364,8 +2355,6 @@
       <!-- ══ AD SLOTS ══ -->
       <div class="page" id="page-adslots">
         <div class="pt">🖼️ <span>Ad Slots</span> A / B / C</div>
-        <p style="font-size:.82rem;color:var(--dim);margin-bottom:14px;">Persistent panels below the scoreboard. Saved
-          to disk — no size limit.</p>
         <div class="g3">
           <div class="card" style="margin-bottom:0;">
             <div class="ct">Slot A</div>
@@ -2460,14 +2449,6 @@
               <div class="cr"><input type="color" id="col-b" value="#1565c0" oninput="save()"><span
                   style="font-size:.74rem;color:var(--dim);">Away accents</span></div>
             </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ct">Score Bug</div>
-          <p style="font-size:.82rem;color:var(--dim);margin-bottom:9px;">Compact overlay used in video source mode.</p>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-gh" onclick="toggleBug(true)">🟢 Show Bug</button>
-            <button class="btn btn-gh" onclick="toggleBug(false)">✕ Hide Bug</button>
           </div>
         </div>
       </div>
@@ -3185,6 +3166,11 @@
     const CEL = { goal: 'GOAL!', try: 'TRY!', basket: 'SCORE!', penalty: 'PENALTY!', owngoal: 'OWN GOAL', yellowcard: 'YELLOW CARD', redcard: 'RED CARD', sub: 'SUBSTITUTION', foul: 'FOUL', other: 'EVENT' };
     const EICO = { goal: '⚽', try: '🏉', basket: '🏀', penalty: '🎯', owngoal: '🔄', yellowcard: '🟨', redcard: '🟥', sub: '🔁', foul: '⚠️', other: '📋' };
     const SCORE_EVENTS = new Set(['goal', 'owngoal', 'try', 'conversion', 'basket', 'penalty', 'drop']);
+    const SPORT_EVENT_OPTS = {
+      soccer:     [{v:'goal',l:'⚽ Goal'},{v:'penalty',l:'🎯 Penalty'},{v:'owngoal',l:'🔄 Own Goal'},{v:'yellowcard',l:'🟨 Yellow Card'},{v:'redcard',l:'🟥 Red Card'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
+      basketball: [{v:'basket',l:'🏀 Basket'},{v:'foul',l:'⚠️ Foul'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
+      rugby:      [{v:'try',l:'🏉 Try'},{v:'penalty',l:'🎯 Penalty'},{v:'yellowcard',l:'🟨 Yellow Card'},{v:'redcard',l:'🟥 Red Card'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
+    };
     const CICO = { announcement: '📣', lowerthird: '📺', halftime: '🏟️', nextperiod: '⏭️', startclock: '▶', stopclock: '⏸', showbug: '🔲', hidebug: '✕', videoon: '🎥', videooff: '📴', adstart: '▶', adnext: '⏭️', adstop: '■', note: '📝' };
 
     // ── STATE ──────────────────────────────────────────────────────────────────
@@ -3583,6 +3569,16 @@
       const ps = document.getElementById('per-sel');
       ps.innerHTML = cfg.periods.map((p, i) => `<option value="${i}">${p}</option>`).join('');
       ps.value = S.period;
+      // Lock sport tabs once a game has started (can only change during SETUP)
+      const sportLocked = S.gameStatus && S.gameStatus !== 'SETUP';
+      const tabsEl = document.querySelector('.sp-tabs');
+      if (tabsEl) {
+        tabsEl.style.opacity = sportLocked ? '0.45' : '';
+        tabsEl.style.pointerEvents = sportLocked ? 'none' : '';
+        let hint = document.getElementById('sport-lock-hint');
+        if (!hint) { hint = document.createElement('div'); hint.id = 'sport-lock-hint'; hint.style.cssText = 'font-size:.7rem;color:var(--dim);margin-top:-6px;margin-bottom:12px;letter-spacing:.04em;'; tabsEl.insertAdjacentElement('afterend', hint); }
+        hint.textContent = sportLocked ? '🔒 Sport locked for this game — change via New Game' : '';
+      }
       ['home', 'away'].forEach(side => {
         const el = document.getElementById('sb-' + side);
         el.style.gridTemplateColumns = `repeat(${cfg.scoreBtns.length},1fr)`;
@@ -3599,6 +3595,12 @@
       document.getElementById('poss-a').textContent = S.awayTeam;
       document.getElementById('me-hn').textContent = S.homeTeam;
       document.getElementById('me-an').textContent = S.awayTeam;
+      // Sport-appropriate event type options in both the score modal and manual event form
+      const evOpts = (SPORT_EVENT_OPTS[S.sport] || SPORT_EVENT_OPTS.soccer).map(o => `<option value="${o.v}">${o.l}</option>`).join('');
+      ['sc-type','me-type'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = evOpts; });
+      // Update modal sport icon
+      const mdTitle = document.querySelector('#sc-modal .modal-t');
+      if (mdTitle) { const icon = S.sport==='basketball'?'🏀':S.sport==='rugby'?'🏉':'⚽'; mdTitle.childNodes[0].textContent = icon+' '; }
     }
     function buildStatsGrid(cfg) {
       document.getElementById('stats-grid').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' + cfg.sk.map((k, i) => `<div class="fg"><label>${cfg.sl[i]}</label><input type="text" id="stat-${k}" value="${S.stats[k] || ''}" placeholder="—" oninput="S.stats['${k}']=this.value;save()"></div>`).join('') + '</div>';
