@@ -216,8 +216,14 @@ async function submit() {
       body: JSON.stringify({ image: dataUrl }),
     });
     if (!r.ok) throw new Error();
+    const data = await r.json();
     show('s-thanks');
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    if (data.pending) {
+      document.querySelector('#s-thanks .thanks-head').textContent = 'Photo submitted!';
+      document.querySelector('#s-thanks .thanks-sub').textContent = 'Your photo is being reviewed. If approved it will appear on screen shortly!';
+      document.querySelector('#s-thanks .badge').textContent = 'SUBMITTED';
+    }
   } catch {
     show('s-preview');
     document.getElementById('submit-btn').disabled = false;

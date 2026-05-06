@@ -75,6 +75,7 @@ def get_all_local_ips():
 
 for sub in ["logos", "ads", "slots", "sponsors", "presented_by", "cues", "selfies"]:
     (MEDIA / sub).mkdir(parents=True, exist_ok=True)
+(MEDIA / "selfies" / "pending").mkdir(parents=True, exist_ok=True)
 GAMES_DIR.mkdir(parents=True, exist_ok=True)
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -115,7 +116,7 @@ DEFAULT_STATE = {
     "qrOverlay": {"active": False, "url": "", "headline": "", "subtext": "", "label": "", "seq": 0},
     "poll": {"active": False, "question": "", "options": [], "votes": {}, "seq": 0},
     "pollResultsOverlay": {"active": False, "seq": 0},
-    "selfieWall": {"active": False, "qrUrl": "", "seq": 0},
+    "selfieWall": {"active": False, "qrUrl": "", "seq": 0, "requireApproval": False},
 }
 
 def load_state():
@@ -674,6 +675,13 @@ class Handler(BaseHTTPRequestHandler):
             files = sorted(selfie_dir.glob("*.jpg"), key=lambda p: p.stat().st_mtime, reverse=True)
             urls = [f"/media/selfies/{p.name}" for p in files[:60]]
             return self._send_json({"urls": urls, "count": len(files)})
+        if path == "/api/selfie/pending":
+            user = self._require_role("admin", "operator")
+            if not user: return
+            pending_dir = MEDIA / "selfies" / "pending"
+            files = sorted(pending_dir.glob("*.jpg"), key=lambda p: p.stat().st_mtime, reverse=False)
+            urls = [f"/media/selfies/pending/{p.name}" for p in files]
+            return self._send_json({"urls": urls, "count": len(files)})
         if path == "/api/localip":
             if not self._current_user():
                 return self._error("Unauthorized", 401)
@@ -843,6 +851,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self._error("Forbidden", 403)
             return self._handle_selfie_clear()
 
+        m = re.match(r'^/api/selfie/approve/([\w.\-]+)$', path)
+        if m:
+            if user["role"] not in ("admin", "operator"):
+                return self._error("Forbidden", 403)
+            return self._handle_selfie_approve(m.group(1))
+
+        m = re.match(r'^/api/selfie/reject/([\w.\-]+)$', path)
+        if m:
+            if user["role"] not in ("admin", "operator"):
+                return self._error("Forbidden", 403)
+            return self._handle_selfie_reject(m.group(1))
+
         return self._error("Unknown route", 404)
 
     def _handle_poll_vote(self):
@@ -890,21 +910,66 @@ class Handler(BaseHTTPRequestHandler):
             img_data = data.get("image", "")
             if not img_data:
                 return self._error("No image", 400)
-            # strip data URI prefix
             if "," in img_data:
                 img_data = img_data.split(",", 1)[1]
             img_bytes = base64.b64decode(img_data)
         except Exception:
             return self._error("Bad request", 400)
-        selfie_dir = MEDIA / "selfies"
+        st = load_state()
+        require_approval = st.get("selfieWall", {}).get("requireApproval", False)
+        selfie_dir = MEDIA / "selfies" / "pending" if require_approval else MEDIA / "selfies"
         selfie_dir.mkdir(parents=True, exist_ok=True)
         fname = f"selfie_{int(time.time() * 1000)}_{secrets.token_hex(4)}.jpg"
         dest = selfie_dir / fname
         try:
             dest.write_bytes(img_bytes)
-            url = f"/media/selfies/{fname}"
+            if require_approval:
+                return self._send_json({"ok": True, "pending": True})
             sse_broadcast_state()
-            return self._send_json({"ok": True, "url": url})
+            return self._send_json({"ok": True, "pending": False})
+        except Exception as e:
+            return self._error(str(e), 500)
+
+    def _handle_selfie_approve(self, fname):
+        if not re.match(r'^[\w.\-]+$', fname):
+            return self._error("Invalid filename", 400)
+        src = MEDIA / "selfies" / "pending" / fname
+        dst = MEDIA / "selfies" / fname
+        if not src.exists():
+            return self._error("Not found", 404)
+        try:
+            src.rename(dst)
+            sse_broadcast_state()
+            return self._send_json({"ok": True})
+        except Exception as e:
+            return self._error(str(e), 500)
+
+    def _handle_selfie_reject(self, fname):
+        if not re.match(r'^[\w.\-]+$', fname):
+            return self._error("Invalid filename", 400)
+        src = MEDIA / "selfies" / "pending" / fname
+        if not src.exists():
+            return self._error("Not found", 404)
+        try:
+            src.unlink()
+            return self._send_json({"ok": True})
+        except Exception as e:
+            return self._error(str(e), 500)
+
+    def _handle_selfie_delete(self, fname):
+        if not re.match(r'^[\w.\-]+$', fname):
+            return self._error("Invalid filename", 400)
+        target = MEDIA / "selfies" / fname
+        try:
+            target.resolve().relative_to((MEDIA / "selfies").resolve())
+        except ValueError:
+            return self._error("Invalid path", 400)
+        if not target.exists() or not target.is_file():
+            return self._error("Not found", 404)
+        try:
+            target.unlink()
+            sse_broadcast_state()
+            return self._send_json({"ok": True})
         except Exception as e:
             return self._error(str(e), 500)
 
@@ -913,6 +978,9 @@ class Handler(BaseHTTPRequestHandler):
         removed = 0
         try:
             for f in selfie_dir.glob("*.jpg"):
+                f.unlink(missing_ok=True)
+                removed += 1
+            for f in (selfie_dir / "pending").glob("*.jpg"):
                 f.unlink(missing_ok=True)
                 removed += 1
         except Exception as e:
@@ -941,6 +1009,11 @@ class Handler(BaseHTTPRequestHandler):
             fixtures = load_fixtures()
             save_fixtures([f for f in fixtures if f.get("id") != m.group(1)])
             return self._send_json({"ok": True})
+        m = re.match(r'^/api/selfie/([\w.\-]+)$', path)
+        if m:
+            if user["role"] not in ("admin", "operator"):
+                return self._error("Forbidden", 403)
+            return self._handle_selfie_delete(m.group(1))
         return self._error("Unknown route", 404)
 
     # ═══ HANDLERS ═══════════════════════════════════════════════════════════
