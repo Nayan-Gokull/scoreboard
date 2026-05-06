@@ -151,6 +151,7 @@ if not STATE.exists():
 # ═══════════════════════════════════════════════════════════════════════════
 DEFAULT_CONFIG = {
     "broadcastToken": "",  # empty = XML endpoint is public; set a string to require ?token=...
+    "displayToken": "",    # empty = display is public; set a string to require ?token=...
     "requireHttps": False,  # set True in production
 }
 
@@ -376,6 +377,59 @@ def verify_session_token(token: str):
         return None
 
 # ═══════════════════════════════════════════════════════════════════════════
+#  DISPLAY SESSION COOKIE  (separate from operator session)
+# ═══════════════════════════════════════════════════════════════════════════
+DISPLAY_COOKIE = "sb_display"
+DISPLAY_TTL    = 60 * 60 * 8  # 8 hours
+
+def make_display_cookie() -> str:
+    payload = {"d": 1, "exp": int(time.time()) + DISPLAY_TTL}
+    body = base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
+    sig = hmac.new(COOKIE_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
+    return f"{body}.{sig}"
+
+def verify_display_cookie(token: str) -> bool:
+    try:
+        body, sig = token.split(".", 1)
+        expected = hmac.new(COOKIE_SECRET.encode(), body.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, sig):
+            return False
+        padding = "=" * ((4 - len(body) % 4) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(body + padding))
+        return payload.get("exp", 0) >= time.time()
+    except Exception:
+        return False
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  LOGIN RATE LIMITING  (in-memory, per remote IP)
+# ═══════════════════════════════════════════════════════════════════════════
+_login_failures: dict = {}   # ip → [timestamp, ...]
+_login_rl_lock  = threading.Lock()
+LOGIN_MAX_FAILURES = 5
+LOGIN_FAILURE_WINDOW = 300   # 5 minutes
+LOGIN_LOCKOUT_TTL    = 900   # 15 minutes
+
+def _rl_check(ip: str):
+    """Return (allowed, seconds_until_unlock)."""
+    now = time.time()
+    with _login_rl_lock:
+        ts = [t for t in _login_failures.get(ip, []) if now - t < LOGIN_LOCKOUT_TTL]
+        _login_failures[ip] = ts
+        recent = [t for t in ts if now - t < LOGIN_FAILURE_WINDOW]
+        if len(recent) >= LOGIN_MAX_FAILURES:
+            wait = int(min(ts) + LOGIN_LOCKOUT_TTL - now) + 1
+            return False, max(1, wait)
+        return True, 0
+
+def _rl_fail(ip: str):
+    with _login_rl_lock:
+        _login_failures.setdefault(ip, []).append(time.time())
+
+def _rl_clear(ip: str):
+    with _login_rl_lock:
+        _login_failures.pop(ip, None)
+
+# ═══════════════════════════════════════════════════════════════════════════
 #  SSE (SERVER-SENT EVENTS) — real-time state push to display + dashboards
 # ═══════════════════════════════════════════════════════════════════════════
 sse_clients = []
@@ -554,6 +608,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
+    def _has_display_access(self) -> bool:
+        """True if the request carries a valid operator session OR a valid display cookie."""
+        if self._current_user():
+            return True
+        c = self._get_cookies()
+        return verify_display_cookie(c.get(DISPLAY_COOKIE, ""))
+
     def _require_login(self):
         user = self._current_user()
         if not user:
@@ -590,17 +651,32 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/login":
             return self._serve_static("login.html")
         if path == "/display":
-            return self._serve_static("display.html")
+            cfg = load_config()
+            dt = cfg.get("displayToken", "")
+            if not dt or self._has_display_access():
+                return self._serve_static("display.html")
+            # Validate ?token= query param → set display cookie → redirect to clean URL
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            provided = qs.get("token", [""])[0]
+            if provided and hmac.compare_digest(provided, dt):
+                secure = "; Secure" if cfg.get("requireHttps") else ""
+                cookie = f"{DISPLAY_COOKIE}={make_display_cookie()}; Path=/; HttpOnly; SameSite=Lax; Max-Age={DISPLAY_TTL}{secure}"
+                return self._redirect("/display", extra_headers={"Set-Cookie": cookie})
+            return self._send(403, b"<html><body style='font-family:sans-serif;padding:48px;background:#07070d;color:#eee'><h2 style='color:#f5c842'>Display Access Required</h2><p>A valid display token is required.<br>Contact your match operator.</p></body></html>", "text/html; charset=utf-8")
         if path == "/poll":
             return self._serve_static("poll.html")
         if path == "/selfie":
             return self._serve_static("selfie.html")
         if path == "/api/selfie/list":
+            if not self._has_display_access():
+                return self._error("Unauthorized", 401)
             selfie_dir = MEDIA / "selfies"
             files = sorted(selfie_dir.glob("*.jpg"), key=lambda p: p.stat().st_mtime, reverse=True)
             urls = [f"/media/selfies/{p.name}" for p in files[:60]]
             return self._send_json({"urls": urls, "count": len(files)})
         if path == "/api/localip":
+            if not self._current_user():
+                return self._error("Unauthorized", 401)
             port = self.server.server_address[1]
             ips = get_all_local_ips()
             return self._send_json({"ips": ips, "port": port})
@@ -616,7 +692,9 @@ class Handler(BaseHTTPRequestHandler):
             })
         if path in ("/xml", "/scoreboard.xml", "/xml.xml"):
             return self._handle_xml()
-        if path == "/events":  # SSE stream — public (display page needs it)
+        if path == "/events":
+            if not self._has_display_access():
+                return self._error("Unauthorized", 401)
             return self._handle_sse(None)
         if path == "/api/me":
             user = self._current_user()
@@ -646,7 +724,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static("scorer.html")
 
         if path == "/state":
-            # GET /state is public — the display page needs it without login
+            if not self._has_display_access():
+                return self._error("Unauthorized", 401)
             return self._send_json(load_state())
 
         if path == "/api/media-list":
@@ -867,6 +946,11 @@ class Handler(BaseHTTPRequestHandler):
     # ═══ HANDLERS ═══════════════════════════════════════════════════════════
     def _handle_login(self):
         try:
+            ip = self.client_address[0]
+            allowed, wait = _rl_check(ip)
+            if not allowed:
+                mins = (wait // 60) + 1
+                return self._error(f"Too many failed attempts. Try again in {mins} minute{'s' if mins != 1 else ''}.", 429)
             length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(length).decode("utf-8")
             data = json.loads(body)
@@ -874,8 +958,10 @@ class Handler(BaseHTTPRequestHandler):
             pw = data.get("password") or ""
             u = users.get(uname)
             if not u or not verify_password(pw, u["password"]):
-                time.sleep(0.3)  # tiny delay to slow brute-force
+                _rl_fail(ip)
+                time.sleep(0.3)
                 return self._error("Invalid username or password", 401)
+            _rl_clear(ip)
             token = make_session_token(uname)
             cookie = f"{COOKIE_NAME}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={SESSION_TTL}"
             cfg = load_config()
