@@ -1131,14 +1131,8 @@ function renderSelfieWall(s){
   if(active&&!_swActive){
     _swActive=true;
     fetchSelfies();
-    _swInterval=setInterval(()=>{
-      if(_swUrls.length>SW_SLOTS){
-        const url=_swNextUrl();
-        if(url){swSetSlot(_swSlotIdx%SW_SLOTS,url);_swSlotIdx++;}
-      }
-    },SW_ROTATE_MS);
-    // also refresh photo list periodically
-    setInterval(fetchSelfies,5000);
+    // Refresh every 5s — fetchSelfies keeps grid sorted newest-first automatically
+    _swInterval=setInterval(fetchSelfies,5000);
   }
   if(!active&&_swActive){
     _swActive=false;
@@ -1159,11 +1153,9 @@ async function fetchSelfies(){
     _swQueue=[];
     const cnt=document.getElementById('sw-count');
     if(cnt)cnt.textContent=_swUrls.length?`${_swUrls.length} photo${_swUrls.length!==1?'s':''}`:'' ;
-    if(isFirstFetch){
-      // Initial fill: populate empty slots in order
-      for(let i=0;i<SW_SLOTS&&i<_swUrls.length;i++) swSetSlot(i,_swUrls[i]);
-    }
-    // Queue reveal for genuinely new photos — reveal will also place each into the grid
+    // Always sync grid: slot 0=newest, slot 1=2nd newest, … swSetSlot skips unchanged slots
+    for(let i=0;i<SW_SLOTS;i++) swSetSlot(i,_swUrls[i]||'');
+    // Queue reveal for genuinely new photos
     newUrls.forEach(u=>{_swRevealQueue.push(u);});
     processRevealQueue();
   }catch(_){}
@@ -1185,13 +1177,6 @@ function showSelfieReveal(url,done){
   photo.src=url;
   if(_swSponsor&&spImg){spImg.src=_swSponsor;sp.style.display='';}
   else{sp.style.display='none';}
-  // Place photo into next empty slot; fall back to rotation slot
-  let placed=false;
-  for(let i=0;i<SW_SLOTS;i++){
-    const slot=document.getElementById('sw-'+i);
-    if(slot){const img=slot.querySelector('img');if(img&&!img.getAttribute('data-url')){swSetSlot(i,url);placed=true;break;}}
-  }
-  if(!placed){swSetSlot(_swSlotIdx%SW_SLOTS,url);_swSlotIdx++;}
   rev.classList.remove('out');
   rev.classList.add('on');
   setTimeout(()=>{
