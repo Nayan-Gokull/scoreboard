@@ -683,6 +683,13 @@
       background: rgba(244, 63, 94, .08);
     }
 
+    .btn-blu {
+      background: rgba(21, 101, 192, .18);
+      color: #64b5f6;
+      border: 1px solid rgba(21, 101, 192, .4);
+    }
+    .btn-blu:hover { background: rgba(21, 101, 192, .32); }
+
     .btn-f {
       width: 100%;
       padding: 9px;
@@ -1927,15 +1934,14 @@
       </div>
       <div class="fg" style="margin-bottom:9px;"><label>Event Type</label>
         <select id="sc-type" onchange="onScTypeChange()">
-          <option value="goal">⚽ Goal</option>
-          <option value="try">🏉 Try</option>
-          <option value="basket">🏀 Basket</option>
-          <option value="penalty">🎯 Penalty</option>
-          <option value="owngoal">🔄 Own Goal</option>
-          <option value="yellowcard">🟨 Yellow Card</option>
+          <option value="yellowcard">🟨 Yellow Card (Sin Bin)</option>
           <option value="redcard">🟥 Red Card</option>
+          <option value="penalty_conceded">⚠️ Penalty Conceded</option>
+          <option value="scrum">🔵 Scrum Awarded</option>
+          <option value="lineout">📐 Lineout Awarded</option>
+          <option value="turnover">🔄 Turnover</option>
+          <option value="knock_on">🤚 Knock-on</option>
           <option value="sub">🔁 Substitution</option>
-          <option value="foul">⚠️ Foul</option>
           <option value="other">📋 Other</option>
         </select>
       </div>
@@ -1958,6 +1964,43 @@
       <div class="modal-f">
         <button class="btn btn-gh btn-sm" onclick="closeMd()">Cancel</button>
         <button class="btn btn-acc" onclick="confirmScore()">✓ Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversion modal -->
+  <div class="modal-bg" id="conv-modal">
+    <div class="modal">
+      <div class="modal-t">🏉 Conversion Attempt</div>
+      <div style="font-size:.82rem;color:var(--dim);margin-bottom:12px;">Try scored by <b id="conv-scorer" style="color:#fff;">—</b></div>
+      <div class="fg" style="margin-bottom:14px;">
+        <label>Kicker</label>
+        <input type="text" id="conv-kicker" placeholder="Kicker name" list="dl-sc-players" autocomplete="off">
+      </div>
+      <div class="modal-f">
+        <button class="btn btn-gh btn-sm" onclick="closeConvModal()">Skip</button>
+        <button class="btn btn-dg" onclick="confirmConv(false)">✕ Missed</button>
+        <button class="btn btn-grn" onclick="confirmConv(true)">✓ Converted +2</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player intro modal -->
+  <div class="modal-bg" id="intro-modal">
+    <div class="modal">
+      <div class="modal-t">📺 Player Intro Broadcast</div>
+      <div class="g2" style="margin-bottom:9px;align-items:end;">
+        <div class="fg"><label>Jersey #</label><input type="number" id="intro-num" min="1" max="23" placeholder="7"></div>
+        <div class="fg"><label>Name</label><input type="text" id="intro-name" placeholder="Player Name"></div>
+      </div>
+      <div class="g2" style="margin-bottom:9px;align-items:end;">
+        <div class="fg"><label>Position</label><input type="text" id="intro-pos" placeholder="Fly Half"></div>
+        <div class="fg"><label>Team</label><select id="intro-team"><option value="home">Home</option><option value="away">Away</option></select></div>
+      </div>
+      <div class="fg" style="margin-bottom:9px;"><label>Stat line <span style="color:var(--dim);font-weight:400;font-size:.72rem;">optional</span></label><input type="text" id="intro-stat" placeholder="e.g. 2 Tries · 14 Tackles"></div>
+      <div class="modal-f">
+        <button class="btn btn-gh btn-sm" onclick="closeIntroModal()">Cancel</button>
+        <button class="btn btn-acc" onclick="fireIntro()">📡 Broadcast Now</button>
       </div>
     </div>
   </div>
@@ -2123,38 +2166,46 @@
           <div class="gc-states">
             <button class="gcs-btn" id="gcs-setup"    onclick="qState('SETUP')">⚙ Setup</button>
             <button class="gcs-btn" id="gcs-live"     onclick="qState('LIVE')">● Live</button>
-            <button class="gcs-btn" id="gcs-halftime" onclick="qState('HALFTIME')">⏸ Half Time</button>
+            <button class="gcs-btn" id="gcs-halftime" style="position:relative" onclick="qState('HALFTIME')">⏸ Half Time<span class="key-badge">H</span></button>
             <button class="gcs-btn" id="gcs-ideal"    onclick="qState('IDEAL')">📺 Ideal</button>
-            <button class="gcs-btn" id="gcs-final"    onclick="qState('FINAL')">🏁 Full Time</button>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-dg admin-only" onclick="finalizeGame()">🗄 End &amp; Archive</button>
+            <button class="gcs-btn" id="gcs-final"    style="position:relative" onclick="qState('FINAL')">🏁 Full Time<span class="key-badge">F</span></button>
           </div>
         </div>
 
         <div class="card admin-only">
           <div class="ct">Scoreboard</div>
           <div class="g-vs">
-            <div class="sc-card home"><label
-                style="text-align:center;display:block;margin-bottom:6px;color:var(--grn)">Team 1 — <span
-                  id="sc-hn">—</span></label>
+            <div class="sc-card home">
+              <label style="text-align:center;display:block;margin-bottom:6px;color:var(--grn)">Home — <span id="sc-hn">—</span></label>
               <div class="big-sc" id="sc-hs">0</div>
-              <div id="sb-home" style="display:grid;gap:5px;margin-top:8px;padding-top:9px;"></div>
-              <div class="g2" style="margin-top:5px;"><button class="btn btn-dg btn-xs"
-                  onclick="adj('home',-1)">–1</button><button class="btn btn-dg btn-xs"
-                  onclick="setScr('home',0)">Reset</button></div>
+              <div id="bdwn-h" style="text-align:center;font-family:Rajdhani,sans-serif;font-size:.72rem;letter-spacing:.12em;color:var(--dim);margin:3px 0 8px;">—</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;">
+                <button class="btn btn-grn btn-sm" style="position:relative" onclick="rugbyTry('home')">🏉 Try +5<span class="key-badge">T</span></button>
+                <button class="btn btn-grn btn-sm" style="position:relative" onclick="rugbyPenGoal('home')">🎯 Pen +3<span class="key-badge">P</span></button>
+                <button class="btn btn-grn btn-sm" style="position:relative" onclick="rugbyDropGoal('home')">⬇️ Drop +3<span class="key-badge">D</span></button>
+                <button class="btn btn-grn btn-sm" style="position:relative" onclick="rugbyPenTry('home')">⚡ Pen Try +7<span class="key-badge">X</span></button>
+              </div>
+              <div class="g2"><button class="btn btn-dg btn-xs" onclick="adj('home',-1)">–1</button><button class="btn btn-dg btn-xs" onclick="setScr('home',0)">Reset</button></div>
             </div>
             <div class="vs-m">VS</div>
-            <div class="sc-card away"><label
-                style="text-align:center;display:block;margin-bottom:6px;color:var(--away)">Team 2 — <span
-                  id="sc-an">—</span></label>
+            <div class="sc-card away">
+              <label style="text-align:center;display:block;margin-bottom:6px;color:var(--away)">Away — <span id="sc-an">—</span></label>
               <div class="big-sc" id="sc-as">0</div>
-              <div id="sb-away" style="display:grid;gap:5px;margin-top:8px;padding-top:9px;"></div>
-              <div class="g2" style="margin-top:5px;"><button class="btn btn-dg btn-xs"
-                  onclick="adj('away',-1)">–1</button><button class="btn btn-dg btn-xs"
-                  onclick="setScr('away',0)">Reset</button></div>
+              <div id="bdwn-a" style="text-align:center;font-family:Rajdhani,sans-serif;font-size:.72rem;letter-spacing:.12em;color:var(--dim);margin:3px 0 8px;">—</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;">
+                <button class="btn btn-blu btn-sm" style="position:relative" onclick="rugbyTry('away')">🏉 Try +5<span class="key-badge">⇧T</span></button>
+                <button class="btn btn-blu btn-sm" style="position:relative" onclick="rugbyPenGoal('away')">🎯 Pen +3<span class="key-badge">⇧P</span></button>
+                <button class="btn btn-blu btn-sm" style="position:relative" onclick="rugbyDropGoal('away')">⬇️ Drop +3<span class="key-badge">⇧D</span></button>
+                <button class="btn btn-blu btn-sm" style="position:relative" onclick="rugbyPenTry('away')">⚡ Pen Try +7<span class="key-badge">⇧X</span></button>
+              </div>
+              <div class="g2"><button class="btn btn-dg btn-xs" onclick="adj('away',-1)">–1</button><button class="btn btn-dg btn-xs" onclick="setScr('away',0)">Reset</button></div>
             </div>
           </div>
+        </div>
+        <!-- Sin bin live widget -->
+        <div class="card admin-only" id="sinbin-card" style="display:none;">
+          <div class="ct">🟨 Sin Bin</div>
+          <div id="sinbin-list"></div>
         </div>
         <div class="card">
           <div class="ct">Period &amp; Possession</div>
@@ -2182,11 +2233,12 @@
         <div class="card">
           <div class="ct">Quick Actions</div>
           <div class="qg">
-            <button class="btn btn-gh" onclick="nextPer()">⏭️ Next Period</button>
+            <button class="btn btn-gh" style="position:relative" onclick="nextPer()">⏭️ Next Period<span class="key-badge">N</span></button>
             <button class="btn btn-gh" onclick="swapPoss()">↔️ Swap Poss.</button>
           </div>
           <div class="hr" style="margin:10px 0;"></div>
-          <button class="btn btn-dg btn-sm admin-only" style="width:100%;" onclick="fullReset()">🗑 Full Reset</button>
+          <button class="btn btn-dg btn-sm admin-only" style="width:100%;margin-bottom:6px;" onclick="fullReset()">🗑 Full Reset</button>
+          <button class="btn btn-dg btn-sm admin-only" style="width:100%;opacity:.7;" onclick="finalizeGame()">🗄 End &amp; Archive</button>
         </div>
       </div>
 
@@ -2197,7 +2249,7 @@
           <div class="ct">Countdown</div>
           <div class="tim-d" id="tim-d">45:00</div>
           <div class="tim-c">
-            <button class="btn btn-grn" id="btn-ss" onclick="toggleTimer()">▶ Start</button>
+            <button class="btn btn-grn" id="btn-ss" style="position:relative" onclick="toggleTimer()">▶ Start<span class="key-badge">SPC</span></button>
             <button class="btn btn-gh" onclick="resetTimer()">↺ Reset</button>
             <button class="btn btn-gh" onclick="addTime(60)">+1 min</button>
             <button class="btn btn-gh" onclick="addTime(-60)">–1 min</button>
@@ -2275,21 +2327,30 @@
 
       <!-- ══ TEAMS ══ -->
       <div class="page" id="page-teams">
-        <div class="pt">🛡️ <span>Team</span> Settings</div>
+        <div class="pt">🛡️ <span>Match</span> Setup</div>
+        <datalist id="dl-sl-comps">
+          <option>CLIFFORD CUP</option><option>BATTLE OF THE MAROONS</option><option>BRADBY SHIELD</option>
+          <option>SCHOOLS 7s CHAMPIONSHIP</option><option>CLUB CHAMPIONSHIP</option>
+          <option>PROVINCIAL CHAMPIONSHIP</option><option>DIVISION 1</option><option>DIVISION 2</option>
+        </datalist>
         <div class="card">
-          <div class="ct">Sport Mode</div>
+          <div class="ct">Format</div>
           <div class="sp-tabs">
-            <div class="sp-tab active" id="tab-soccer" onclick="setSport('soccer')"><span class="si">⚽</span><span class="sn">Soccer</span></div>
-            <div class="sp-tab" id="tab-basketball" onclick="setSport('basketball')"><span class="si">🏀</span><span class="sn">Basketball</span></div>
-            <div class="sp-tab" id="tab-rugby" onclick="setSport('rugby')"><span class="si">🏉</span><span class="sn">Rugby</span></div>
+            <div class="sp-tab active" id="tab-15s" onclick="setFormat('15s')"><span class="si">🏉</span><span class="sn">Rugby 15s</span></div>
+            <div class="sp-tab" id="tab-7s" onclick="setFormat('7s')"><span class="si">⚡</span><span class="sn">Rugby 7s</span></div>
           </div>
         </div>
         <div class="card">
           <div class="ct">Match Info</div>
-          <div class="g3">
-            <div class="fg"><label>League / Event</label><input type="text" id="league-i" value="UNIVERSITY LEAGUE" oninput="save()"></div>
+          <div class="g3" style="margin-bottom:9px;">
+            <div class="fg"><label>Competition</label><input type="text" id="league-i" value="CLIFFORD CUP" list="dl-sl-comps" oninput="save()"></div>
             <div class="fg"><label>Date</label><input type="text" id="date-i" value="—" oninput="save()"></div>
             <div class="fg"><label>Venue</label><input type="text" id="loc-i" value="—" oninput="save()"></div>
+          </div>
+          <div class="g3">
+            <div class="fg"><label>Referee</label><input type="text" id="referee-i" placeholder="—" oninput="S.referee=this.value;save()"></div>
+            <div class="fg"><label>AR 1</label><input type="text" id="ar1-i" placeholder="—" oninput="S.assistantRef1=this.value;save()"></div>
+            <div class="fg"><label>AR 2</label><input type="text" id="ar2-i" placeholder="—" oninput="S.assistantRef2=this.value;save()"></div>
           </div>
         </div>
         <div class="g-vs">
@@ -2429,6 +2490,14 @@
       <!-- ══ ANNOUNCE ══ -->
       <div class="page" id="page-announce">
         <div class="pt">📣 <span>Announcements</span></div>
+        <div class="card">
+          <div class="ct">📺 Player Intro Broadcast</div>
+          <div class="qg">
+            <button class="btn btn-acc" style="position:relative;flex:1;" onclick="openIntroModal()">📺 Broadcast Player Intro<span class="key-badge">I</span></button>
+            <button class="btn btn-gh" onclick="clearIntro()">✕ Clear</button>
+          </div>
+          <div style="font-size:.74rem;color:var(--dim);margin-top:7px;line-height:1.5;">Shows a full-screen "Introducing…" card on the display with the player's number, name, position, and stat line.</div>
+        </div>
         <div class="card">
           <div class="ct">Full-Screen Overlay <span
               style="font-size:.64rem;font-weight:400;color:var(--dim);margin-left:5px;">Auto-hides after 4s</span>
@@ -2756,56 +2825,45 @@
         <div class="card">
           <div class="ct">Timer &amp; Match Control</div>
           <div class="sc-grid">
-            <span class="kbd">Space</span><span class="sc-d">Start / Pause timer</span>
+            <span class="kbd">Space</span><span class="sc-d">Start / Pause clock</span>
             <span class="kbd">N</span><span class="sc-d">Next period</span>
             <span class="kbd">H</span><span class="sc-d">Halftime</span>
-            <span class="kbd">F</span><span class="sc-d">Final / End game</span>
+            <span class="kbd">F</span><span class="sc-d">Full time / End game</span>
             <span class="kbd">Z</span><span class="sc-d">Undo last action</span>
           </div>
         </div>
         <div class="card">
-          <div class="ct">Soccer Scoring</div>
+          <div class="ct">🏉 Rugby Scoring &nbsp;<span style="font-size:.68rem;color:var(--dim);font-weight:400;">Hold ⇧ for away team</span></div>
           <div class="sc-grid">
-            <span class="kbd">G</span><span class="sc-d">Team 1 goal (+1)</span>
-            <span class="kbd">⇧G</span><span class="sc-d">Team 2 goal (+1)</span>
+            <span class="kbd">T</span><span class="sc-d">Home — Try +5 (opens player modal)</span>
+            <span class="kbd">⇧T</span><span class="sc-d">Away — Try +5</span>
+            <span class="kbd">P</span><span class="sc-d">Home — Penalty Goal +3</span>
+            <span class="kbd">⇧P</span><span class="sc-d">Away — Penalty Goal +3</span>
+            <span class="kbd">D</span><span class="sc-d">Home — Drop Goal +3</span>
+            <span class="kbd">⇧D</span><span class="sc-d">Away — Drop Goal +3</span>
+            <span class="kbd">X</span><span class="sc-d">Home — Penalty Try +7 (instant, no modal)</span>
+            <span class="kbd">⇧X</span><span class="sc-d">Away — Penalty Try +7</span>
+            <span class="kbd">Y</span><span class="sc-d">Home — Yellow Card / Sin Bin</span>
+            <span class="kbd">⇧Y</span><span class="sc-d">Away — Yellow Card / Sin Bin</span>
+            <span class="kbd">I</span><span class="sc-d">Open Player Intro broadcast</span>
           </div>
         </div>
         <div class="card">
-          <div class="ct">Basketball Scoring</div>
+          <div class="ct">Modal Flow</div>
           <div class="sc-grid">
-            <span class="kbd">3</span><span class="sc-d">Team 1 +3 three-pointer</span>
-            <span class="kbd">2</span><span class="sc-d">Team 1 +2 field goal</span>
-            <span class="kbd">1</span><span class="sc-d">Team 1 +1 free throw</span>
-            <span class="kbd">⇧3</span><span class="sc-d">Team 2 +3 three-pointer</span>
-            <span class="kbd">⇧2</span><span class="sc-d">Team 2 +2 field goal</span>
-            <span class="kbd">⇧1</span><span class="sc-d">Team 2 +1 free throw</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ct">Rugby Scoring &nbsp;<span style="font-size:.68rem;color:var(--dim);font-weight:400;">Hold Shift for Team 2</span></div>
-          <div class="sc-grid">
-            <span class="kbd">T</span><span class="sc-d">Try (+5)</span>
-            <span class="kbd">C</span><span class="sc-d">Conversion (+2)</span>
-            <span class="kbd">P</span><span class="sc-d">Penalty (+3)</span>
-            <span class="kbd">D</span><span class="sc-d">Drop goal (+1)</span>
+            <span class="kbd">Enter</span><span class="sc-d">Confirm / submit (when modal is open)</span>
+            <span class="kbd">Esc</span><span class="sc-d">Cancel &amp; close modal</span>
           </div>
         </div>
         <div class="card">
           <div class="ct">Display &amp; Broadcast</div>
           <div class="sc-grid">
-            <span class="kbd">L</span><span class="sc-d">Show last event as lower-third</span>
+            <span class="kbd">L</span><span class="sc-d">Push last event as lower-third graphic</span>
             <span class="kbd">B</span><span class="sc-d">Toggle score bug</span>
-            <span class="kbd">Enter</span><span class="sc-d">GO — fire next cue</span>
+            <span class="kbd">Enter</span><span class="sc-d">GO — fire next cue in cue list</span>
             <span class="kbd">→</span><span class="sc-d">Next ad in scheduler</span>
             <span class="kbd">←</span><span class="sc-d">Previous ad in scheduler</span>
-            <span class="kbd">Esc</span><span class="sc-d">Close modal / dialog</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="ct">Modal</div>
-          <div class="sc-grid">
-            <span class="kbd">Enter</span><span class="sc-d">Confirm score event (when modal open)</span>
-            <span class="kbd">Esc</span><span class="sc-d">Cancel / close</span>
+            <span class="kbd">Esc</span><span class="sc-d">Close modal / overlay</span>
           </div>
         </div>
       </div>
@@ -3174,42 +3232,43 @@
     // ══════════════════════════════════════════════════════════════
     //  SPORT CONFIGS
     // ══════════════════════════════════════════════════════════════
-    const SPORTS = {
-      soccer: {
-        label: 'SOCCER', periods: ['1ST HALF', '2ND HALF', 'EXTRA TIME 1', 'EXTRA TIME 2', 'PENALTIES'],
-        scoreBtns: [{ l: '+1 GOAL', v: 1, hk: 'G', ak: '⇧G' }], sk: ['possession', 'shots', 'corners', 'fouls'], sl: ['Possession %', 'Shots', 'Corners', 'Fouls'],
-        extras: [{ id: 'hYellow', l: 'H Yellow' }, { id: 'aYellow', l: 'A Yellow' }, { id: 'hRed', l: 'H Red' }, { id: 'aRed', l: 'A Red' }], cel: 'GOAL!'
-      },
-      basketball: {
-        label: 'BASKETBALL', periods: ['Q1', 'Q2', 'Q3', 'Q4', 'OT'],
-        scoreBtns: [{ l: '+3', v: 3, hk: '3', ak: '⇧3' }, { l: '+2', v: 2, hk: '2', ak: '⇧2' }, { l: '+1', v: 1, hk: '1', ak: '⇧1' }], sk: ['hFouls', 'aFouls', 'hTO', 'aTO'], sl: ['H Fouls', 'A Fouls', 'H TO', 'A TO'],
-        extras: [{ id: 'hFouls', l: 'H Fouls' }, { id: 'aFouls', l: 'A Fouls' }, { id: 'hTO', l: 'H TO' }, { id: 'aTO', l: 'A TO' }], cel: 'SLAM DUNK!'
-      },
-      rugby: {
-        label: 'RUGBY', periods: ['1ST HALF', '2ND HALF', 'EXTRA TIME 1', 'EXTRA TIME 2'],
-        scoreBtns: [{ l: '+5 TRY', v: 5, hk: 'T', ak: '⇧T' }, { l: '+2 CONV', v: 2, hk: 'C', ak: '⇧C' }, { l: '+3 PEN', v: 3, hk: 'P', ak: '⇧P' }, { l: '+1 DROP', v: 1, hk: 'D', ak: '⇧D' }], sk: ['tries', 'conversions', 'penalties', 'yellowCards'], sl: ['Tries', 'Conversions', 'Penalties', 'Yellow Cards'],
-        extras: [{ id: 'hYellow', l: 'H Yellow' }, { id: 'aYellow', l: 'A Yellow' }], cel: 'TRY!'
-      },
+    // ── RUGBY UNION — ONLY SPORT ───────────────────────────────────────────────
+    const RUGBY = {
+      label: 'RUGBY UNION',
+      periods15s: ['1ST HALF','2ND HALF','EXTRA TIME 1','EXTRA TIME 2'],
+      periods7s:  ['1ST HALF','2ND HALF','EXTRA TIME'],
+      sk: ['scrumWonH','scrumWonA','lineoutWonH','lineoutWonA','penaltiesH','penaltiesA','tacklesH','tacklesA'],
+      sl: ['Scrums Won (H)','Scrums Won (A)','Lineouts Won (H)','Lineouts Won (A)','Penalties (H)','Penalties (A)','Tackles (H)','Tackles (A)'],
     };
-    const CEL = { goal: 'GOAL!', try: 'TRY!', basket: 'SLAM DUNK!', penalty: 'PENALTY!', owngoal: 'OWN GOAL', yellowcard: 'YELLOW CARD', redcard: 'RED CARD', sub: 'SUBSTITUTION', foul: 'FOUL', other: 'EVENT' };
-    const EICO = { goal: '⚽', try: '🏉', basket: '🏀', penalty: '🎯', owngoal: '🔄', yellowcard: '🟨', redcard: '🟥', sub: '🔁', foul: '⚠️', other: '📋' };
-    const SCORE_EVENTS = new Set(['goal', 'owngoal', 'try', 'conversion', 'basket', 'penalty', 'drop']);
-    const SPORT_EVENT_OPTS = {
-      soccer:     [{v:'goal',l:'⚽ Goal'},{v:'penalty',l:'🎯 Penalty'},{v:'owngoal',l:'🔄 Own Goal'},{v:'yellowcard',l:'🟨 Yellow Card'},{v:'redcard',l:'🟥 Red Card'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
-      basketball: [{v:'basket',l:'🏀 Slam Dunk'},{v:'foul',l:'⚠️ Foul'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
-      rugby:      [{v:'try',l:'🏉 Try'},{v:'penalty',l:'🎯 Penalty'},{v:'yellowcard',l:'🟨 Yellow Card'},{v:'redcard',l:'🟥 Red Card'},{v:'sub',l:'🔁 Sub'},{v:'other',l:'📋 Other'}],
-    };
+    const CEL = { try:'TRY!', conversion:'CONVERTED!', conversion_miss:'MISSED', penalty_goal:'PENALTY GOAL!', drop_goal:'DROP GOAL!', penalty_try:'PENALTY TRY!', yellowcard:'YELLOW CARD', redcard:'RED CARD', sub:'SUBSTITUTION', scrum:'SCRUM', lineout:'LINEOUT', other:'EVENT' };
+    const EICO = { try:'🏉', conversion:'✅', conversion_miss:'❌', penalty_goal:'🎯', drop_goal:'⬇️', penalty_try:'⚡', yellowcard:'🟨', redcard:'🟥', sub:'🔁', scrum:'🔵', lineout:'📐', penalty_conceded:'⚠️', turnover:'🔄', knock_on:'🤚', other:'📋' };
+    const SCORE_EVENTS = new Set(['try','conversion','penalty_goal','drop_goal','penalty_try']);
+    const RUGBY_EVENTS = [
+      {v:'try',l:'🏉 Try'},{v:'conversion',l:'✅ Conversion (Made)'},{v:'conversion_miss',l:'❌ Conversion (Missed)'},
+      {v:'penalty_goal',l:'🎯 Penalty Goal'},{v:'drop_goal',l:'⬇️ Drop Goal'},{v:'penalty_try',l:'⚡ Penalty Try'},
+      {v:'yellowcard',l:'🟨 Yellow Card (Sin Bin)'},{v:'redcard',l:'🟥 Red Card'},
+      {v:'sub',l:'🔁 Substitution'},{v:'scrum',l:'🔵 Scrum Awarded'},{v:'lineout',l:'📐 Lineout Awarded'},
+      {v:'penalty_conceded',l:'⚠️ Penalty Conceded'},{v:'turnover',l:'🔄 Turnover'},{v:'knock_on',l:'🤚 Knock-on'},{v:'other',l:'📋 Other'},
+    ];
+    const SL_COMPETITIONS = ['CLIFFORD CUP','BATTLE OF THE MAROONS','BRADBY SHIELD','SCHOOLS 7s CHAMPIONSHIP','CLUB CHAMPIONSHIP','PROVINCIAL CHAMPIONSHIP','DIVISION 1','DIVISION 2'];
     const CICO = { announcement: '📣', lowerthird: '📺', halftime: '🏟️', nextperiod: '⏭️', startclock: '▶', stopclock: '⏸', showbug: '🔲', hidebug: '✕', videoon: '🎥', videooff: '📴', adstart: '▶', adnext: '⏭️', adstop: '■', note: '📝' };
 
     // ── STATE ──────────────────────────────────────────────────────────────────
+    const DEF_BREAKDOWN = { tries:0, conversions:0, penaltyGoals:0, dropGoals:0, penaltyTries:0 };
     const DEF = {
-      sport: 'soccer', homeTeam: 'Team 1', awayTeam: 'Team 2', leagueName: 'UNIVERSITY LEAGUE',
-      homeScore: 0, awayScore: 0, period: 0, clock: '00:00', clockRunning: false,
-      gameStatus: 'LIVE', gameDate: '—', gameLocation: '—', homeRecord: '—', awayRecord: '—',
+      sport: 'rugby', rugbyFormat: '15s',
+      homeTeam: 'Team 1', awayTeam: 'Team 2', leagueName: 'CLIFFORD CUP',
+      homeScore: 0, awayScore: 0,
+      homeBreakdown: {...DEF_BREAKDOWN}, awayBreakdown: {...DEF_BREAKDOWN},
+      period: 0, clock: '00:00', clockRunning: false,
+      gameStatus: 'LIVE', gameDate: '—', gameLocation: '—', kickoff: '',
+      homeRecord: '—', awayRecord: '—',
+      referee: '', assistantRef1: '', assistantRef2: '',
       homeLogo: '', awayLogo: '', adSlot1: '', adSlot2: '', adSlot3: '',
       presentedByLogo: '', presentedByText: 'PRESENTED BY', sponsors: [],
       announcement: '', annSeq: 0, teamAColor: '#e8272f', teamBColor: '#1565c0',
       possession: 'none', stats: {}, extras: {}, events: [], playerStats: {},
+      sinBins: [], playerIntro: null,
       lowerThird: null, celebration: null,
       lBug: { logo: '', position: 'tr', visible: false }, celebSponsor: '', announcementLogo: '',
       papare: { logo: '', text: 'PAPARE', visible: true },
@@ -3595,9 +3654,9 @@
       updateScUI();
       updateGameControl();
       updateGameCodeDisplay();
-      const cfg = SPORTS[S.sport] || SPORTS.soccer;
-      const pi = Math.max(0, Math.min(S.period || 0, cfg.periods.length - 1));
-      document.getElementById('pv-per').textContent = cfg.periods[pi] || '—';
+      const periods = S.rugbyFormat === '7s' ? RUGBY.periods7s : RUGBY.periods15s;
+      const pi = Math.max(0, Math.min(S.period || 0, periods.length - 1));
+      document.getElementById('pv-per').textContent = periods[pi] || '—';
       document.getElementById('pv-clk').textContent = S.clock || '00:00';
       renderEvs();
       renderTimeline();
@@ -3614,43 +3673,225 @@
 
     // ── SPORT ──────────────────────────────────────────────────────────────────
     function setSport(sp) { pushUndo('Sport'); S.sport = sp; document.querySelectorAll('.sp-tab').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + sp).classList.add('active'); buildSportUI(); save(); }
-    function buildSportUI() {
-      const cfg = SPORTS[S.sport];
-      const ps = document.getElementById('per-sel');
-      ps.innerHTML = cfg.periods.map((p, i) => `<option value="${i}">${p}</option>`).join('');
-      ps.value = S.period;
-      // Lock sport tabs once a game has started (can only change during SETUP)
-      const sportLocked = S.gameStatus && S.gameStatus !== 'SETUP';
-      const tabsEl = document.querySelector('.sp-tabs');
-      if (tabsEl) {
-        tabsEl.style.opacity = sportLocked ? '0.45' : '';
-        tabsEl.style.pointerEvents = sportLocked ? 'none' : '';
-        let hint = document.getElementById('sport-lock-hint');
-        if (!hint) { hint = document.createElement('div'); hint.id = 'sport-lock-hint'; hint.style.cssText = 'font-size:.7rem;color:var(--dim);margin-top:-6px;margin-bottom:12px;letter-spacing:.04em;'; tabsEl.insertAdjacentElement('afterend', hint); }
-        hint.textContent = sportLocked ? '🔒 Sport locked for this game — change via New Game' : '';
+    // ── RUGBY FORMAT ──────────────────────────────────────────────────────────
+    function setFormat(fmt) {
+      S.rugbyFormat = fmt;
+      document.getElementById('tab-15s').classList.toggle('active', fmt === '15s');
+      document.getElementById('tab-7s').classList.toggle('active', fmt === '7s');
+      buildSportUI(); save();
+    }
+    // ── SCORE BREAKDOWN ────────────────────────────────────────────────────────
+    function bdKey(side) { return side === 'home' ? 'homeBreakdown' : 'awayBreakdown'; }
+    function fmtBreakdown(bd) {
+      if (!bd) return '—';
+      const parts = [];
+      if (bd.tries)        parts.push(`${bd.tries}T`);
+      if (bd.penaltyTries) parts.push(`${bd.penaltyTries}PT`);
+      if (bd.conversions)  parts.push(`${bd.conversions}C`);
+      if (bd.penaltyGoals) parts.push(`${bd.penaltyGoals}P`);
+      if (bd.dropGoals)    parts.push(`${bd.dropGoals}DG`);
+      return parts.join(' · ') || '—';
+    }
+    function updateBreakdownUI() {
+      document.getElementById('bdwn-h').textContent = fmtBreakdown(S.homeBreakdown);
+      document.getElementById('bdwn-a').textContent = fmtBreakdown(S.awayBreakdown);
+    }
+    // ── RUGBY SCORING FUNCTIONS ────────────────────────────────────────────────
+    let _convSide = 'home', _convTryEvent = null;
+    function rugbyTry(side) {
+      mdSide = side; mdVal = 5;
+      document.getElementById('md-lbl').textContent = '🏉 Try +5';
+      document.getElementById('md-hn').textContent = S.homeTeam;
+      document.getElementById('md-an').textContent = S.awayTeam;
+      document.getElementById('sc-name').value = '';
+      document.getElementById('sc-time').value = fmtTime(timerSecs);
+      document.getElementById('sc-sub-on').value = '';
+      document.getElementById('sc-sub-off').value = '';
+      document.getElementById('sc-sub-time').value = fmtTime(timerSecs);
+      // Force to non-sub, non-yellowcard type so modal shows normal player row
+      document.getElementById('sc-type').value = 'try';
+      onScTypeChange();
+      pickTeam(side); updateMdDroplist(side);
+      document.getElementById('sc-modal').classList.add('on');
+      setTimeout(() => document.getElementById('sc-name').focus(), 80);
+    }
+    async function _confirmTry(side, player, time) {
+      const teamName = side === 'home' ? S.homeTeam : S.awayTeam;
+      pushUndo('Try ' + side);
+      if (side === 'home') S.homeScore = clamp(S.homeScore + 5, 0, 999);
+      else S.awayScore = clamp(S.awayScore + 5, 0, 999);
+      if (!S.homeBreakdown) S.homeBreakdown = {...DEF_BREAKDOWN};
+      if (!S.awayBreakdown) S.awayBreakdown = {...DEF_BREAKDOWN};
+      S[bdKey(side)].tries++;
+      const ev = { id: Date.now(), type: 'try', side, player, time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
+      S.events.push(ev);
+      updatePlayerStat(player, 'try');
+      S.celebration = { text: 'TRY!', type: 'try', scorer: player ? `${time} — ${player}` : time, seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+      S.lowerThird = { type: '🏉 TRY!', main: player || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+      closeMd(); await save(); renderEvs(); updateScUI(); updateBreakdownUI(); renderPlayerStats();
+      toast(`TRY! ${teamName}`);
+      // Open conversion modal
+      _convSide = side; _convTryEvent = ev;
+      document.getElementById('conv-scorer').textContent = player || teamName;
+      document.getElementById('conv-kicker').value = '';
+      updateMdDroplist(side);
+      document.getElementById('conv-modal').classList.add('on');
+      setTimeout(() => document.getElementById('conv-kicker').focus(), 80);
+    }
+    function closeConvModal() { document.getElementById('conv-modal').classList.remove('on'); }
+    async function confirmConv(made) {
+      closeConvModal();
+      const side = _convSide, teamName = side === 'home' ? S.homeTeam : S.awayTeam;
+      const kicker = document.getElementById('conv-kicker').value.trim();
+      const time = fmtTime(timerSecs);
+      const type = made ? 'conversion' : 'conversion_miss';
+      if (made) {
+        if (side === 'home') S.homeScore = clamp(S.homeScore + 2, 0, 999);
+        else S.awayScore = clamp(S.awayScore + 2, 0, 999);
+        S[bdKey(side)].conversions++;
+        S.celebration = { text: 'CONVERTED!', type: 'conversion', scorer: kicker ? `${time} — ${kicker}` : time, seq: Date.now(), duration: 2, sponsor: '' };
+        S.lowerThird = { type: '✅ CONVERSION', main: kicker || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 4 };
       }
-      ['home', 'away'].forEach(side => {
-        const el = document.getElementById('sb-' + side);
-        el.style.gridTemplateColumns = `repeat(${cfg.scoreBtns.length},1fr)`;
-        const c = side === 'home' ? 'btn-grn' : 'btn-blu';
-        el.innerHTML = cfg.scoreBtns.map(b => {
-          const kh = side === 'home' ? b.hk : b.ak;
-          return `<button class="btn ${c} btn-xs" style="position:relative;" onclick="openMd('${side}',${b.v},'${b.l}')">${b.l}${kh ? `<span class="key-badge">${kh}</span>` : ''}</button>`;
-        }).join('');
-      });
-      const ec = document.getElementById('ex-card');
-      if (cfg.extras && cfg.extras.length) { ec.style.display = ''; document.getElementById('ex-cont').innerHTML = '<div class="ex-g">' + cfg.extras.map(e => `<div class="ex-i"><div style="font-family:Rajdhani,sans-serif;font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:4px;">${e.l}</div><div class="ex-v" id="ex-${e.id}">${S.extras[e.id] || 0}</div><div class="ex-b"><button class="btn btn-dg btn-xs" onclick="adjEx('${e.id}',-1)">–</button><button class="btn btn-gh btn-xs" onclick="adjEx('${e.id}',1)">+</button></div></div>`).join('') + '</div>'; } else ec.style.display = 'none';
-      buildStatsGrid(cfg);
+      const ev = { id: Date.now(), type, side, player: kicker, time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
+      S.events.push(ev);
+      await save(); renderEvs(); updateScUI(); updateBreakdownUI(); renderPlayerStats();
+      toast(made ? `Conversion! ${teamName}` : `Missed — ${teamName}`);
+    }
+    function rugbyPenGoal(side) {
+      mdSide = side; mdVal = 3;
+      document.getElementById('md-lbl').textContent = '🎯 Penalty Goal +3';
+      document.getElementById('md-hn').textContent = S.homeTeam;
+      document.getElementById('md-an').textContent = S.awayTeam;
+      document.getElementById('sc-name').value = '';
+      document.getElementById('sc-time').value = fmtTime(timerSecs);
+      document.getElementById('sc-type').value = 'penalty_goal';
+      onScTypeChange();
+      pickTeam(side); updateMdDroplist(side);
+      document.getElementById('sc-modal').classList.add('on');
+      setTimeout(() => document.getElementById('sc-name').focus(), 80);
+    }
+    function rugbyDropGoal(side) {
+      mdSide = side; mdVal = 3;
+      document.getElementById('md-lbl').textContent = '⬇️ Drop Goal +3';
+      document.getElementById('md-hn').textContent = S.homeTeam;
+      document.getElementById('md-an').textContent = S.awayTeam;
+      document.getElementById('sc-name').value = '';
+      document.getElementById('sc-time').value = fmtTime(timerSecs);
+      document.getElementById('sc-type').value = 'drop_goal';
+      onScTypeChange();
+      pickTeam(side); updateMdDroplist(side);
+      document.getElementById('sc-modal').classList.add('on');
+      setTimeout(() => document.getElementById('sc-name').focus(), 80);
+    }
+    function rugbyYellow(side) {
+      mdSide = side; mdVal = 0;
+      document.getElementById('md-lbl').textContent = '🟨 Yellow Card / Sin Bin';
+      document.getElementById('md-hn').textContent = S.homeTeam;
+      document.getElementById('md-an').textContent = S.awayTeam;
+      document.getElementById('sc-name').value = '';
+      document.getElementById('sc-time').value = fmtTime(timerSecs);
+      document.getElementById('sc-type').value = 'yellowcard';
+      onScTypeChange();
+      pickTeam(side); updateMdDroplist(side);
+      document.getElementById('sc-modal').classList.add('on');
+      setTimeout(() => document.getElementById('sc-name').focus(), 80);
+    }
+    async function rugbyPenTry(side) {
+      if (!confirm(`Award Penalty Try to ${side === 'home' ? S.homeTeam : S.awayTeam}? (+7 pts, no conversion attempt)`)) return;
+      const teamName = side === 'home' ? S.homeTeam : S.awayTeam;
+      const time = fmtTime(timerSecs);
+      pushUndo('Penalty Try ' + side);
+      if (side === 'home') S.homeScore = clamp(S.homeScore + 7, 0, 999);
+      else S.awayScore = clamp(S.awayScore + 7, 0, 999);
+      if (!S.homeBreakdown) S.homeBreakdown = {...DEF_BREAKDOWN};
+      if (!S.awayBreakdown) S.awayBreakdown = {...DEF_BREAKDOWN};
+      S[bdKey(side)].penaltyTries++;
+      const ev = { id: Date.now(), type: 'penalty_try', side, player: '', time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
+      S.events.push(ev);
+      S.celebration = { text: 'PENALTY TRY!', type: 'penalty_try', scorer: `${time} — ${teamName}`, seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+      S.lowerThird = { type: '⚡ PENALTY TRY', main: teamName, sub: `${time} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+      await save(); renderEvs(); updateScUI(); updateBreakdownUI(); renderPlayerStats();
+      toast(`Penalty Try! ${teamName}`);
+    }
+    // ── SIN BIN ───────────────────────────────────────────────────────────────
+    let _sinBinInterval = null;
+    function addSinBin(player, team, side) {
+      if (!S.sinBins) S.sinBins = [];
+      S.sinBins.push({ id: Date.now(), player, team, side, startWall: Date.now(), duration: 600 });
+      renderSinBins();
+    }
+    function removeSinBin(id) { S.sinBins = (S.sinBins||[]).filter(b => b.id !== id); save(); renderSinBins(); }
+    function renderSinBins() {
+      const bins = S.sinBins || [];
+      const card = document.getElementById('sinbin-card');
+      const list = document.getElementById('sinbin-list');
+      card.style.display = bins.length ? '' : 'none';
+      const now = Date.now();
+      list.innerHTML = bins.map(b => {
+        const elapsed = Math.floor((now - b.startWall) / 1000);
+        const remaining = Math.max(0, b.duration - elapsed);
+        const mm = Math.floor(remaining / 60), ss = remaining % 60;
+        const pct = Math.min(100, (elapsed / b.duration) * 100);
+        const expired = remaining === 0;
+        return `<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;padding:8px 10px;background:rgba(250,200,0,${expired?'.05':'.1'});border:1px solid rgba(250,200,0,${expired?'.1':'.3'});border-radius:8px;">
+          <div style="flex:1;">
+            <div style="font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;color:${expired?'var(--dim)':'var(--gold)'};">${b.player||'Unknown'} <span style="font-size:.65rem;opacity:.6;">(${b.team})</span></div>
+            <div style="height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:4px;"><div style="height:100%;width:${pct}%;background:${expired?'var(--dim)':'var(--gold)'};border-radius:2px;transition:width 1s linear;"></div></div>
+          </div>
+          <div style="font-family:monospace;font-size:1.1rem;color:${expired?'var(--dim)':'var(--gold)'};">${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}</div>
+          <button class="btn btn-dg btn-xs" onclick="removeSinBin(${b.id})">✓ Return</button>
+        </div>`;
+      }).join('');
+      if (!_sinBinInterval && bins.length) {
+        _sinBinInterval = setInterval(() => { if ((S.sinBins||[]).length) renderSinBins(); else { clearInterval(_sinBinInterval); _sinBinInterval = null; } }, 1000);
+      }
+    }
+    // ── PLAYER INTRO ──────────────────────────────────────────────────────────
+    function openIntroModal() {
+      const el = document.getElementById('intro-modal');
+      document.getElementById('intro-num').value = '';
+      document.getElementById('intro-name').value = '';
+      document.getElementById('intro-pos').value = '';
+      document.getElementById('intro-stat').value = '';
+      el.classList.add('on');
+      setTimeout(() => document.getElementById('intro-num').focus(), 80);
+    }
+    function closeIntroModal() { document.getElementById('intro-modal').classList.remove('on'); }
+    async function fireIntro() {
+      const num  = document.getElementById('intro-num').value.trim();
+      const name = document.getElementById('intro-name').value.trim();
+      const pos  = document.getElementById('intro-pos').value.trim();
+      const team = document.getElementById('intro-team').value;
+      const stat = document.getElementById('intro-stat').value.trim();
+      if (!name) { toast('Player name required', true); return; }
+      const teamName = team === 'home' ? S.homeTeam : S.awayTeam;
+      const logo = team === 'home' ? S.homeLogo : S.awayLogo;
+      S.playerIntro = { num, name, pos, teamName, logo, stat, seq: Date.now() };
+      closeIntroModal();
+      await pushState(); toast(`Intro: ${name}`);
+    }
+    async function clearIntro() { S.playerIntro = null; await pushState(); toast('Intro cleared'); }
+    // ── BUILD SPORT UI ────────────────────────────────────────────────────────
+    function buildSportUI() {
+      const periods = S.rugbyFormat === '7s' ? RUGBY.periods7s : RUGBY.periods15s;
+      const ps = document.getElementById('per-sel');
+      ps.innerHTML = periods.map((p, i) => `<option value="${i}">${p}</option>`).join('');
+      ps.value = S.period;
+      // Format tabs
+      const f = S.rugbyFormat || '15s';
+      document.getElementById('tab-15s').classList.toggle('active', f === '15s');
+      document.getElementById('tab-7s').classList.toggle('active', f === '7s');
+      // Stats grid
+      buildStatsGrid(RUGBY);
       document.getElementById('poss-h').textContent = S.homeTeam;
       document.getElementById('poss-a').textContent = S.awayTeam;
       document.getElementById('me-hn').textContent = S.homeTeam;
       document.getElementById('me-an').textContent = S.awayTeam;
-      // Sport-appropriate event type options in both the score modal and manual event form
-      const evOpts = (SPORT_EVENT_OPTS[S.sport] || SPORT_EVENT_OPTS.soccer).map(o => `<option value="${o.v}">${o.l}</option>`).join('');
-      ['sc-type','me-type'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = evOpts; });
-      // Update modal sport icon
-      const mdTitle = document.querySelector('#sc-modal .modal-t');
-      if (mdTitle) { const icon = S.sport==='basketball'?'🏀':S.sport==='rugby'?'🏉':'⚽'; mdTitle.childNodes[0].textContent = icon+' '; }
+      // Event type options (sc-modal uses static rugby options; me-type is dynamic)
+      const evOpts = RUGBY_EVENTS.map(o => `<option value="${o.v}">${o.l}</option>`).join('');
+      const me = document.getElementById('me-type'); if (me) me.innerHTML = evOpts;
+      updateBreakdownUI();
+      renderSinBins();
     }
     function buildStatsGrid(cfg) {
       document.getElementById('stats-grid').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">' + cfg.sk.map((k, i) => `<div class="fg"><label>${cfg.sl[i]}</label><input type="text" id="stat-${k}" value="${S.stats[k] || ''}" placeholder="—" oninput="S.stats['${k}']=this.value;save()"></div>`).join('') + '</div>';
@@ -3683,32 +3924,46 @@
     function closeMd() { document.getElementById('sc-modal').classList.remove('on'); }
     async function confirmScore() {
       const evType = document.getElementById('sc-type').value;
+      // Rugby try/penalty_goal/drop_goal go through their own dedicated flows
+      if (evType === 'try') { await _confirmTry(mdSide, document.getElementById('sc-name').value.trim(), document.getElementById('sc-time').value.trim() || fmtTime(timerSecs)); return; }
       const isSub = evType === 'sub';
-      const name = isSub
-        ? document.getElementById('sc-sub-on').value.trim()
-        : document.getElementById('sc-name').value.trim();
+      const name = isSub ? document.getElementById('sc-sub-on').value.trim() : document.getElementById('sc-name').value.trim();
       const playerOff = isSub ? document.getElementById('sc-sub-off').value.trim() : '';
       const time = (isSub ? document.getElementById('sc-sub-time') : document.getElementById('sc-time')).value.trim() || fmtTime(timerSecs);
       const teamName = mdSide === 'home' ? S.homeTeam : S.awayTeam;
-      const isScoring = SCORE_EVENTS.has(evType) && mdVal > 0;
+      if (!S.homeBreakdown) S.homeBreakdown = {...DEF_BREAKDOWN};
+      if (!S.awayBreakdown) S.awayBreakdown = {...DEF_BREAKDOWN};
       pushUndo(`${evType} ${mdSide}`);
-      if (isScoring) {
-        if (mdSide === 'home') S.homeScore = clamp(S.homeScore + mdVal, 0, 999);
-        else S.awayScore = clamp(S.awayScore + mdVal, 0, 999);
+      // Score & breakdown
+      if (evType === 'penalty_goal') {
+        if (mdSide === 'home') S.homeScore = clamp(S.homeScore + 3, 0, 999); else S.awayScore = clamp(S.awayScore + 3, 0, 999);
+        S[bdKey(mdSide)].penaltyGoals++;
+      } else if (evType === 'drop_goal') {
+        if (mdSide === 'home') S.homeScore = clamp(S.homeScore + 3, 0, 999); else S.awayScore = clamp(S.awayScore + 3, 0, 999);
+        S[bdKey(mdSide)].dropGoals++;
       }
       const ev = { id: Date.now(), type: evType, side: mdSide, player: name, time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
       if (isSub && playerOff) ev.playerOff = playerOff;
       S.events.push(ev);
       updatePlayerStat(name, evType);
+      // Sin bin for yellow card
+      if (evType === 'yellowcard' && name) addSinBin(name, teamName, mdSide);
+      // Celebration & lower third
       if (isSub) {
         S.celebration = { text: 'SUBSTITUTION', type: evType, scorer: [name && `↑ ${name}`, playerOff && `↓ ${playerOff}`].filter(Boolean).join('  '), seq: Date.now(), duration: 3, sponsor: '' };
         S.lowerThird  = { type: '🔁 SUBSTITUTION', main: name ? `↑ ${name}` : teamName, sub: playerOff ? `↓ ${playerOff} · ${time} — ${teamName}` : `${time} — ${teamName}`, seq: Date.now(), duration: 6 };
+      } else if (evType === 'penalty_goal') {
+        S.celebration = { text: 'PENALTY GOAL!', type: evType, scorer: name ? `${time} — ${name}` : time, seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+        S.lowerThird  = { type: '🎯 PENALTY GOAL', main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+      } else if (evType === 'drop_goal') {
+        S.celebration = { text: 'DROP GOAL!', type: evType, scorer: name ? `${time} — ${name}` : time, seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+        S.lowerThird  = { type: '⬇️ DROP GOAL', main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
       } else {
-        S.celebration = { text: CEL[evType] || SPORTS[S.sport].cel, type: evType, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
-        S.lowerThird  = { type: (EICO[evType] || '📋') + ' ' + evType.toUpperCase(), main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+        S.celebration = { text: CEL[evType] || 'EVENT', type: evType, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: '' };
+        S.lowerThird  = { type: (EICO[evType] || '📋') + ' ' + evType.replace(/_/g,' ').toUpperCase(), main: name || teamName, sub: `${time} — ${teamName}`, seq: Date.now(), duration: 6 };
       }
-      closeMd(); await save(); renderEvs(); updateScUI(); renderPlayerStats();
-      toast(isScoring ? `${teamName} +${mdVal}` : `${teamName}: ${evType}`);
+      closeMd(); await save(); renderEvs(); updateScUI(); updateBreakdownUI(); renderPlayerStats();
+      toast(`${teamName}: ${evType.replace(/_/g,' ')}`);
     }
 
     // ── SCORES ─────────────────────────────────────────────────────────────────
@@ -3809,7 +4064,7 @@
     // ── QUICK ACTIONS ──────────────────────────────────────────────────────────
     async function qHalf() { pushUndo('Halftime'); S.gameStatus = 'HALFTIME'; S.annSeq = Date.now(); S.announcement = 'HALFTIME'; document.getElementById('st-sel').value = 'HALFTIME'; await save(); toast('Halftime'); }
     async function qFinal() { pushUndo('Final'); S.gameStatus = 'FINAL'; S.annSeq = Date.now(); S.announcement = 'FINAL — GAME OVER'; document.getElementById('st-sel').value = 'FINAL'; clearInterval(timerInt); timerOn = false; S.clockRunning = false; await save(); toast('Final'); }
-    function nextPer() { pushUndo('Next period'); const cfg = SPORTS[S.sport]; S.period = Math.min(S.period + 1, cfg.periods.length - 1); document.getElementById('per-sel').value = S.period; save(); }
+    function nextPer() { pushUndo('Next period'); const periods = S.rugbyFormat === '7s' ? RUGBY.periods7s : RUGBY.periods15s; S.period = Math.min(S.period + 1, periods.length - 1); document.getElementById('per-sel').value = S.period; save(); }
     function swapPoss() { const sel = document.getElementById('poss-sel'); sel.value = sel.value === 'home' ? 'away' : sel.value === 'away' ? 'home' : 'home'; S.possession = sel.value; save(); }
     function resetEx() { pushUndo('Reset extras'); S.extras = {}; S.stats = {}; buildSportUI(); save(); }
     async function fullReset() { if (!confirm('Full reset?')) return; pushUndo('Full reset'); Object.assign(S, JSON.parse(JSON.stringify(DEF))); rebuildUI(); await save(); toast('Reset done'); }
@@ -3860,7 +4115,7 @@
       document.getElementById('poss-h').textContent = S.homeTeam; document.getElementById('poss-a').textContent = S.awayTeam;
       document.getElementById('me-hn').textContent = S.homeTeam; document.getElementById('me-an').textContent = S.awayTeam;
       document.getElementById('md-hn').textContent = S.homeTeam; document.getElementById('md-an').textContent = S.awayTeam;
-      const cfg = SPORTS[S.sport]; document.getElementById('pv-per').textContent = cfg.periods[S.period] || '—';
+      const _periods = S.rugbyFormat === '7s' ? RUGBY.periods7s : RUGBY.periods15s; document.getElementById('pv-per').textContent = _periods[S.period] || '—';
       updateScUI();
     }
     function syncSt() { document.getElementById('st-sel').value = document.getElementById('st-sel2').value; save(); }
@@ -4047,7 +4302,7 @@
         case 'announcement': S.annSeq = Date.now(); S.announcement = c.param || c.label; break;
         case 'lowerthird': S.lowerThird = { type: 'CUE', main: c.param || c.label, sub: '', seq: Date.now(), duration: 6 }; break;
         case 'halftime': S.gameStatus = 'HALFTIME'; S.annSeq = Date.now(); S.announcement = 'HALFTIME'; document.getElementById('st-sel').value = 'HALFTIME'; break;
-        case 'nextperiod': const cfg = SPORTS[S.sport]; S.period = Math.min(S.period + 1, cfg.periods.length - 1); document.getElementById('per-sel').value = S.period; break;
+        case 'nextperiod': { const _ps = S.rugbyFormat === '7s' ? RUGBY.periods7s : RUGBY.periods15s; S.period = Math.min(S.period + 1, _ps.length - 1); document.getElementById('per-sel').value = S.period; break; }
         case 'startclock': if (!timerOn) toggleTimer(); break;
         case 'stopclock': if (timerOn) toggleTimer(); break;
         case 'showbug': S.showScoreBug = true; break;
@@ -4126,7 +4381,7 @@
 
     // ── EXPORT ──────────────────────────────────────────────────────────────────
     function exportReport() {
-      const cfg = SPORTS[S.sport];
+      const cfg = RUGBY;
       const evH = S.events.length ? S.events.map(ev => {
         const pl = ev.type === 'sub'
           ? [ev.player && `<span style="color:#2e7d32">↑ ${ev.player}</span>`, ev.playerOff && `<span style="color:#c62828">↓ ${ev.playerOff}</span>`].filter(Boolean).join(' / ') || '—'
@@ -4265,9 +4520,14 @@
       document.getElementById('set-s').value = timerSecs % 60;
       renderTimer();
 
-      document.querySelectorAll('.sp-tab').forEach(t => t.classList.remove('active'));
-      const sp = S.sport || 'soccer'; document.getElementById('tab-' + sp).classList.add('active');
-      buildSportUI(); renderSponsors(); renderEvs(); renderTimeline(); renderCues(); updateScUI(); syncTeamsUI(); updateGameControl(); updateGameCodeDisplay();
+      // Sync referee fields
+      const ri = document.getElementById('referee-i'); if (ri) ri.value = S.referee || '';
+      const ar1 = document.getElementById('ar1-i'); if (ar1) ar1.value = S.assistantRef1 || '';
+      const ar2 = document.getElementById('ar2-i'); if (ar2) ar2.value = S.assistantRef2 || '';
+      // Sync breakdown
+      if (!S.homeBreakdown) S.homeBreakdown = {...DEF_BREAKDOWN};
+      if (!S.awayBreakdown) S.awayBreakdown = {...DEF_BREAKDOWN};
+      buildSportUI(); renderSponsors(); renderEvs(); renderTimeline(); renderCues(); updateScUI(); updateBreakdownUI(); syncTeamsUI(); updateGameControl(); updateGameCodeDisplay(); renderSinBins();
       renderPlayers();
       updatePlayerDroplists();
       // Restore logos
@@ -4319,21 +4579,14 @@
         case 'ArrowRight': opNext(); break;
         case 'ArrowLeft': opPrev(); break;
       }
-      // Soccer: G = home goal, Shift+G = away goal
-      if (S.sport === 'soccer') {
-        if (e.code === 'KeyG') { e.shiftKey ? openMd('away', 1, '+1 GOAL') : openMd('home', 1, '+1 GOAL'); return; }
-      }
-      // Basketball: 1/2/3 home, Shift+1/2/3 away
-      if (S.sport === 'basketball') {
-        const bv = { Digit3: 3, Digit2: 2, Digit1: 1 }; const bval = bv[e.code];
-        if (bval !== undefined) { openMd(e.shiftKey ? 'away' : 'home', bval, `+${bval}`); return; }
-      }
-      // Rugby: T/C/P/D home, Shift for away
-      if (S.sport === 'rugby') {
-        const rm = { KeyT: { v: 5, l: '+5 TRY' }, KeyC: { v: 2, l: '+2 CONV' }, KeyP: { v: 3, l: '+3 PEN' }, KeyD: { v: 1, l: '+1 DROP' } };
-        const ra = rm[e.code];
-        if (ra) { openMd(e.shiftKey ? 'away' : 'home', ra.v, ra.l); return; }
-      }
+      // Rugby: T/P/D/X/Y + Shift for away; I for player intro
+      const side = e.shiftKey ? 'away' : 'home';
+      if (e.code === 'KeyT') { rugbyTry(side); return; }
+      if (e.code === 'KeyP') { rugbyPenGoal(side); return; }
+      if (e.code === 'KeyD') { rugbyDropGoal(side); return; }
+      if (e.code === 'KeyX') { rugbyPenTry(side); return; }
+      if (e.code === 'KeyY') { rugbyYellow(side); return; }
+      if (e.code === 'KeyI') { openIntroModal(); return; }
     });
 
     // ── LIVE POLL ─────────────────────────────────────────────────────────────
@@ -4688,11 +4941,10 @@
         'Manual Ad Overlay': 'Upload a single image or short video to float temporarily as an overlay on top of the live video feed. Set the duration, upload the file, and press Show Ad on Feed. It hides after the set duration.',
         'Live Endpoint': 'The XML URL to give to external broadcast software (CasparCG, vMix, Chyron, etc.) for live match data integration. Returns current score, period, teams, stats, and events. Recommended poll rate: 500ms–2s.',
         'Token Protection': 'Restrict XML feed access by requiring a token in the URL. Leave empty for public access. Click Generate for a random token or type your own. Share only with authorized broadcast PCs.',
-        'Timer & Match Control': 'Keyboard shortcuts for the game clock and core match state. Space pauses/resumes the clock. N=Next Period, H=Halftime, F=Final. Z undoes the last scoring action.',
-        'Soccer Scoring': 'Keyboard shortcuts for soccer. G adds a goal (+1) for Team 1; Shift+G adds a goal for Team 2.',
-        'Basketball Scoring': 'Shortcuts for basketball scoring. 3/2/1 add three-pointer (+3), field goal (+2), free throw (+1) for Team 1. Shift+3/2/1 apply the same scores for Team 2.',
-        'Rugby Scoring': 'Shortcuts for rugby scoring. T=Try (+5), C=Conversion (+2), P=Penalty (+3), D=Drop goal (+1) for Team 1. Hold Shift for any key to apply the same score to Team 2.',
-        'Display & Broadcast': 'Broadcast shortcuts. L shows the last event as a lower-third graphic on display. B toggles the score bug. Enter fires the next cue in the Cue List. Arrow keys step through the ad scheduler.',
+        'Timer & Match Control': 'Keyboard shortcuts for the game clock. Space starts/pauses the clock. N = Next Period, H = Halftime, F = Full Time, Z = Undo last action. All work from any dashboard page.',
+        '🏉 Rugby Scoring': 'Rugby scoring shortcuts. T/P/D open the player modal for Try (+5), Penalty Goal (+3), Drop Goal (+3) for the home team. X confirms a Penalty Try (+7) instantly. Hold Shift for any key to apply to the away team. Y opens a Yellow Card / Sin Bin modal. I opens the Player Intro broadcast.',
+        'Modal Flow': 'When a score or event confirmation dialog is open: Enter confirms the action, Escape cancels and closes without recording anything.',
+        'Display & Broadcast': 'L pushes the last event as a lower-third on the display. B toggles the score bug. Enter fires the next cue in the Cue List. Arrow keys step through the ad scheduler.',
         'Modal': 'When a score/event confirmation dialog is open: Enter confirms the action and closes it. Escape cancels and closes without recording.',
         'Match Report': 'Export a self-contained HTML file with the full match summary: teams, final score, all events, match stats, and player statistics. Ready to share, print, or store as a permanent record.',
         'Session': 'Export all current game state (settings, scores, events, sponsors, roster, etc.) as a JSON backup. Import a previously saved JSON to restore a full session — useful for moving between devices.',

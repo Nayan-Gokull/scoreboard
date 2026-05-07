@@ -159,6 +159,34 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 @keyframes flash{0%,100%{background:#fff;color:#0a0a16}40%{background:var(--gold);color:#06060f}}
 .fl{animation:flash .7s ease;}
 
+/* score breakdown row */
+.sc-bdwn{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--bd);}
+.sc-bdwn-h{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(232,39,47,.7);text-align:center;padding:5px 12px;border-right:1px solid var(--bd);}
+.sc-bdwn-a{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(91,141,232,.7);text-align:center;padding:5px 12px;}
+
+/* sin bin widget */
+#sinbin-widget{position:fixed;bottom:165px;right:16px;z-index:44;display:none;flex-direction:column;gap:6px;min-width:200px;}
+#sinbin-widget.on{display:flex;}
+.sbi{background:rgba(6,6,18,.92);backdrop-filter:blur(12px);border:1px solid rgba(250,200,0,.28);border-left:3px solid #facc15;border-radius:4px;padding:8px 12px;display:flex;flex-direction:column;gap:3px;animation:bugIn .4s cubic-bezier(.22,1,.36,1);}
+.sbi-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.85rem;letter-spacing:.08em;color:#facc15;text-transform:uppercase;}
+.sbi-meta{font-family:'Rajdhani',sans-serif;font-weight:500;font-size:.63rem;letter-spacing:.18em;color:rgba(255,255,255,.36);text-transform:uppercase;}
+.sbi-clk{font-family:'Orbitron',monospace;font-weight:700;font-size:.78rem;color:#fff;letter-spacing:.05em;margin-top:2px;}
+.sbi-track{height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:4px;overflow:hidden;}
+.sbi-fill{height:100%;background:#facc15;border-radius:2px;transition:width .8s linear;}
+
+/* player intro overlay */
+#intro-ov{position:fixed;inset:0;z-index:190;display:none;align-items:center;justify-content:center;background:rgba(4,4,14,.96);backdrop-filter:blur(24px);}
+#intro-ov.on{display:flex;animation:cel-in .45s cubic-bezier(.22,1,.36,1) both;}
+#intro-ov.out{animation:cel-out .5s ease forwards;}
+.intro-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;}
+.intro-eye{font-family:'Bebas Neue',sans-serif;font-size:.82rem;letter-spacing:.52em;color:var(--gold);opacity:.65;margin-bottom:14px;}
+.intro-num{font-family:'Orbitron',monospace;font-weight:900;font-size:6.5rem;color:var(--gold);line-height:1;text-shadow:0 0 90px rgba(245,200,66,.55);}
+.intro-name{font-family:'Bebas Neue',sans-serif;font-size:4.8rem;letter-spacing:.05em;color:#fff;line-height:.92;margin-top:4px;}
+.intro-pos{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.95rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.48);margin-top:12px;}
+.intro-team{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:.12em;margin-top:3px;}
+.intro-div{width:100px;height:2px;background:var(--gold);margin:18px auto;}
+.intro-stat{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;}
+
 #conn{position:fixed;top:50px;right:14px;z-index:999;font-family:'Rajdhani',sans-serif;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:3px;background:rgba(255,23,68,.2);color:#ff6090;border:1px solid rgba(255,23,68,.3);display:none;}
 #conn.show{display:block;}
 
@@ -547,6 +575,7 @@ body.lc-on #vbg{bottom:28%;left:30%;}
       <div class="ts h"><div class="lw" id="h-logo"><div class="lf">🏠</div></div><div class="tn" id="h-name">Team 1</div><div class="tr" id="h-rec">—</div></div>
       <div class="cc">
         <div class="sr"><div class="sc hs" id="h-score">0</div><div class="sc as" id="a-score">0</div></div>
+        <div class="sc-bdwn"><div class="sc-bdwn-h" id="h-bdwn">—</div><div class="sc-bdwn-a" id="a-bdwn">—</div></div>
         <div class="pr"><div class="clk" id="clock">00:00</div><div class="pl" id="period-lbl">1ST HALF</div></div>
       </div>
       <div class="ts a"><div class="lw" id="a-logo"><div class="lf">✈️</div></div><div class="tn" id="a-name">Team 2</div><div class="tr" id="a-rec">—</div></div>
@@ -683,14 +712,32 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 
 <div id="l-card"></div>
 
+<!-- Sin bin widget -->
+<div id="sinbin-widget"></div>
+
+<!-- Player intro overlay -->
+<div id="intro-ov">
+  <div class="intro-wrap">
+    <div class="intro-eye">INTRODUCING</div>
+    <div class="intro-num" id="intro-num">#7</div>
+    <div class="intro-name" id="intro-name">Player Name</div>
+    <div class="intro-pos" id="intro-pos">Flanker</div>
+    <div class="intro-team" id="intro-team">Team Name</div>
+    <div class="intro-div"></div>
+    <div class="intro-stat" id="intro-stat"></div>
+  </div>
+</div>
+
 <script>
 const SPORTS={
   soccer:{label:'SOCCER',periods:['1ST HALF','2ND HALF','EXTRA TIME 1','EXTRA TIME 2','PENALTIES'],sk:['possession','shots','corners','fouls'],sl:['Possession %','Shots','Corners','Fouls']},
   basketball:{label:'BASKETBALL',periods:['Q1','Q2','Q3','Q4','OT'],sk:['hFouls','aFouls','hTO','aTO'],sl:['H Fouls','A Fouls','H TO','A TO']},
-  rugby:{label:'RUGBY',periods:['1ST HALF','2ND HALF','EXTRA TIME 1','EXTRA TIME 2'],sk:['tries','conversions','penalties','yellowCards'],sl:['Tries','Conversions','Penalties','Yellow Cards']},
+  rugby:{label:'RUGBY UNION',periods15s:['1ST HALF','2ND HALF','EXTRA TIME 1','EXTRA TIME 2'],periods7s:['1ST HALF','2ND HALF','EXTRA TIME'],get periods(){return this.periods15s;},sk:['scrumWonH','scrumWonA','lineoutWonH','lineoutWonA','penaltiesH','penaltiesA','tacklesH','tacklesA'],sl:['Scrums (H)','Scrums (A)','Lineouts (H)','Lineouts (A)','Penalties (H)','Penalties (A)','Tackles (H)','Tackles (A)']},
 };
-let _prev={ltSeq:null,celSeq:null,vadSeq:null,annSeq:null,schedIdx:-1,schedActive:false,schedCmd:null};
-let _annTimer=null,_vadTimer=null,_ltTimer=null,_celTimer=null;
+function getCfg(s){const cfg=SPORTS[s.sport]||SPORTS.rugby;if(s.sport==='rugby'){const ps=s.rugbyFormat==='7s'?cfg.periods7s:cfg.periods15s;return Object.assign({},cfg,{periods:ps});}return cfg;}
+let _prev={ltSeq:null,celSeq:null,vadSeq:null,annSeq:null,schedIdx:-1,schedActive:false,schedCmd:null,introSeq:null};
+let _annTimer=null,_vadTimer=null,_ltTimer=null,_celTimer=null,_introTimer=null;
+let _lastState=null;
 let _scoreCache={};
 let _nextPreload=null;
 function _preloadVideo(url){
@@ -719,7 +766,7 @@ setInterval(()=>{
 },500);
 
 function apply(s){
-  const cfg=SPORTS[s.sport]||SPORTS.soccer;
+  const cfg=getCfg(s);
   const pi=Math.max(0,Math.min(s.period||0,cfg.periods.length-1));
   document.documentElement.style.setProperty('--a',s.teamAColor||'#e8272f');
   document.documentElement.style.setProperty('--b',s.teamBColor||'#1565c0');
@@ -747,6 +794,8 @@ function apply(s){
   }
   clk.classList.toggle('running',_clkRunning);
   scoreEl('h-score',s.homeScore||0);scoreEl('a-score',s.awayScore||0);
+  const hbdwn=document.getElementById('h-bdwn');if(hbdwn)hbdwn.textContent=fmtBdwn(s.homeBreakdown);
+  const abdwn=document.getElementById('a-bdwn');if(abdwn)abdwn.textContent=fmtBdwn(s.awayBreakdown);
   const st=s.stats||{};
   document.getElementById('stats-bar').innerHTML=cfg.sk.map((k,i)=>`<div class="sbb"><div class="sv">${st[k]!==undefined?st[k]:'—'}</div><div class="sl">${cfg.sl[i]}</div></div>`).join('');
   document.getElementById('h-poss').className='pd'+(s.possession==='home'?' on':'');
@@ -776,6 +825,8 @@ function apply(s){
   if(s.lowerThird&&s.lowerThird.seq!==_prev.ltSeq){_prev.ltSeq=s.lowerThird.seq;showLT(s.lowerThird);}
   if(s.celebration&&s.celebration.seq!==_prev.celSeq){_prev.celSeq=s.celebration.seq;showCel(s.celebration);}
   if(s.vadSeq&&s.vadSeq!==_prev.vadSeq){_prev.vadSeq=s.vadSeq;if(s.vadCmd==='show'&&s.vadUrl)showVAd(s.vadUrl,s.vadType||'image',s.vadDuration||15);else if(s.vadCmd==='hide')closeVAd();}
+  if(s.playerIntro&&s.playerIntro.seq!==_prev.introSeq){_prev.introSeq=s.playerIntro.seq;showIntro(s.playerIntro);}
+  _lastState=s;renderSinBinWidget(s);
   handleSched(s);
   switchScreen(s.gameStatus);
   applyScreens(s);
@@ -791,7 +842,7 @@ function switchScreen(status){
   if(tk)tk.style.opacity=target==='sc-live'?'':'0';
 }
 function applyScreens(s){
-  const cfg=SPORTS[s.sport]||SPORTS.soccer;
+  const cfg=getCfg(s);
   const pi=Math.max(0,Math.min(s.period||0,cfg.periods.length-1));
   const perlbl=cfg.periods[pi]||`PERIOD ${pi+1}`;
   const meta=[s.leagueName,s.season].filter(Boolean).join(' · ');
@@ -855,6 +906,34 @@ function renderSponsors(s){
   const dv2=document.getElementById('sps-dv2');
   if(dv2)dv2.classList.toggle('on',h2>0&&h3>0);
 }
+function fmtBdwn(bd){if(!bd)return'—';const p=[];if(bd.tries)p.push(bd.tries+'T');if(bd.conversions)p.push(bd.conversions+'C');if(bd.penaltyGoals)p.push(bd.penaltyGoals+'P');if(bd.dropGoals)p.push(bd.dropGoals+'D');if(bd.penaltyTries)p.push(bd.penaltyTries+'PT');return p.join(' · ')||'—';}
+function renderSinBinWidget(s){
+  const w=document.getElementById('sinbin-widget');if(!w)return;
+  const bins=s.sinBins||[];const now=Date.now();
+  const active=bins.filter(b=>(now-(b.startWall||now))/1000<600);
+  if(!active.length){w.classList.remove('on');return;}
+  w.classList.add('on');
+  w.innerHTML=active.map(b=>{
+    const elapsed=Math.floor((now-(b.startWall||now))/1000);
+    const rem=Math.max(0,600-elapsed);
+    const pct=(rem/600)*100;
+    const mm=String(Math.floor(rem/60)).padStart(2,'0'),ss=String(rem%60).padStart(2,'0');
+    return`<div class="sbi"><div class="sbi-name">🟨 ${b.player||'—'}</div><div class="sbi-meta">${b.team||''}</div><div class="sbi-clk">${mm}:${ss} left</div><div class="sbi-track"><div class="sbi-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+function showIntro(p){
+  const ov=document.getElementById('intro-ov');if(!ov)return;
+  document.getElementById('intro-num').textContent=p.jersey?'#'+p.jersey:'';
+  document.getElementById('intro-name').textContent=p.name||'';
+  document.getElementById('intro-pos').textContent=p.position||'';
+  const teamEl=document.getElementById('intro-team');teamEl.textContent=p.team||'';
+  teamEl.style.color=p.side==='home'?'var(--a)':p.side==='away'?'var(--b)':'var(--gold)';
+  document.getElementById('intro-stat').textContent=p.statLine||'';
+  ov.classList.remove('out');ov.classList.add('on');
+  clearTimeout(_introTimer);
+  _introTimer=setTimeout(()=>{ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);},(p.duration||6)*1000);
+}
+setInterval(()=>{if(_lastState)renderSinBinWidget(_lastState);},1000);
 function showAnn(text,logoUrl){const el=document.getElementById('ann');document.getElementById('ann-txt').textContent=text;const sp=document.getElementById('ann-sp'),spImg=document.getElementById('ann-sp-img');if(logoUrl&&sp&&spImg){spImg.src=logoUrl;sp.classList.add('on');}else if(sp){sp.classList.remove('on');if(spImg)spImg.src='';}el.classList.remove('out');el.classList.add('on');clearTimeout(_annTimer);_annTimer=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.classList.remove('on','out'),600);},4000);}
 function _subColor(s){
   if(!s)return'';

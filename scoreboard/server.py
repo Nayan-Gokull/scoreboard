@@ -81,19 +81,25 @@ GAMES_DIR.mkdir(parents=True, exist_ok=True)
 # ═══════════════════════════════════════════════════════════════════════════
 #  DEFAULT STATE
 # ═══════════════════════════════════════════════════════════════════════════
+DEFAULT_BREAKDOWN = {"tries": 0, "conversions": 0, "penaltyGoals": 0, "dropGoals": 0, "penaltyTries": 0}
+
 DEFAULT_STATE = {
     # identity
     "id": "", "createdAt": 0, "finalizedAt": 0,
-    "sport": "soccer",
+    "sport": "rugby",
+    "rugbyFormat": "15s",          # "15s" or "7s"
     "homeTeam": "Team 1", "awayTeam": "Team 2",
-    "leagueName": "UNIVERSITY LEAGUE",
+    "leagueName": "CLIFFORD CUP",
     "matchday": "", "season": "",
     "homeScore": 0, "awayScore": 0,
+    "homeBreakdown": dict(DEFAULT_BREAKDOWN),
+    "awayBreakdown": dict(DEFAULT_BREAKDOWN),
     "period": 0, "clock": "00:00", "clockRunning": False, "clockAnchorWall": 0,
     "gameStatus": "SETUP",
     "gameDate": "—", "gameLocation": "—", "kickoff": "",
     "homeRecord": "—", "awayRecord": "—",
     "homeLogo": "", "awayLogo": "",
+    "referee": "", "assistantRef1": "", "assistantRef2": "",
     "adSlot1": "", "adSlot2": "", "adSlot3": "",
     "presentedByLogo": "", "presentedByText": "PRESENTED BY",
     "sponsors": [],
@@ -102,6 +108,8 @@ DEFAULT_STATE = {
     "possession": "none", "stats": {}, "extras": {},
     "events": [],
     "playerStats": {},
+    "sinBins": [],                  # [{id, player, team, side, startWall, duration}]
+    "playerIntro": None,            # broadcast player intro overlay
     "lowerThird": None, "celebration": None,
     "lBug": {"logo": "", "position": "tr", "visible": False},
     "celebSponsor": "", "announcementLogo": "",
