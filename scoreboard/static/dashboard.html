@@ -2276,6 +2276,35 @@
           <div style="display:flex;gap:7px;"><input type="text" id="man-clk" placeholder="e.g. 87+3 or HT" style="flex:1;"><button class="btn btn-acc" onclick="manClk()">Apply</button></div>
           <div style="font-size:.72rem;color:var(--dim);margin-top:6px;">Override the displayed clock text without affecting the running timer.</div>
         </div>
+        <div class="card">
+          <div class="ct">⏸ Interval Countdown</div>
+          <div class="fg" style="margin-bottom:9px;">
+            <label>Screen Label</label>
+            <div class="qg" style="flex-wrap:wrap;">
+              <button class="btn btn-gh btn-sm" onclick="setCBLabel('HALF TIME')">Half Time</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBLabel('INTERVAL')">Interval</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBLabel('WATER BREAK')">Water Break</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBLabel('TIMEOUT')">Timeout</button>
+              <input type="text" id="cb-lbl-i" value="HALF TIME" maxlength="24" style="flex:1;min-width:100px;" placeholder="Custom label">
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:9px;">
+            <label>Duration</label>
+            <div class="qg" style="flex-wrap:wrap;">
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(5*60)">5 min</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(10*60)">10 min</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(15*60)">15 min</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(20*60)">20 min</button>
+              <input type="number" id="cb-dur-i" value="600" min="10" max="3600" style="width:62px;text-align:center;" oninput="if(!S.commBreak)S.commBreak={};S.commBreak.duration=+this.value">
+              <span style="font-size:.75rem;color:var(--dim);align-self:center;">sec</span>
+            </div>
+          </div>
+          <div class="qg">
+            <button class="btn btn-acc" style="flex:1;" onclick="startCommBreak()">▶ Start Interval</button>
+            <button class="btn btn-gh" onclick="endCommBreak()">■ End Early</button>
+          </div>
+          <div id="cb-status" style="font-size:.74rem;color:var(--dim);margin-top:7px;">Inactive</div>
+        </div>
       </div>
 
       <!-- ══ EVENTS ══ -->
@@ -2497,25 +2526,6 @@
             <button class="btn btn-gh" onclick="clearIntro()">✕ Clear</button>
           </div>
           <div style="font-size:.74rem;color:var(--dim);margin-top:7px;line-height:1.5;">Shows a full-screen "Introducing…" card on the display with the player's number, name, position, and stat line.</div>
-        </div>
-        <div class="card">
-          <div class="ct">📺 Commercial Break</div>
-          <div class="fg" style="margin-bottom:9px;">
-            <label>Duration</label>
-            <div class="qg" style="flex-wrap:wrap;">
-              <button class="btn btn-gh btn-sm" onclick="setCBDur(30)">30s</button>
-              <button class="btn btn-gh btn-sm" onclick="setCBDur(60)">60s</button>
-              <button class="btn btn-gh btn-sm" onclick="setCBDur(90)">90s</button>
-              <button class="btn btn-gh btn-sm" onclick="setCBDur(120)">2 min</button>
-              <input type="number" id="cb-dur-i" value="90" min="10" max="600" style="width:62px;text-align:center;" oninput="if(!S.commBreak)S.commBreak={};S.commBreak.duration=+this.value">
-              <span style="font-size:.75rem;color:var(--dim);align-self:center;">sec</span>
-            </div>
-          </div>
-          <div class="qg">
-            <button class="btn btn-acc" style="flex:1;" onclick="startCommBreak()">▶ Start Break</button>
-            <button class="btn btn-gh" onclick="endCommBreak()">■ End Early</button>
-          </div>
-          <div id="cb-status" style="font-size:.74rem;color:var(--dim);margin-top:7px;">Inactive</div>
         </div>
         <div class="card">
           <div class="ct">Full-Screen Overlay <span
@@ -3300,7 +3310,7 @@
       poll: { active: false, question: '', options: [], votes: {}, seq: 0 },
       pollResultsOverlay: { active: false, seq: 0 },
       selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false, sponsorLogo: '' },
-      commBreak: { active: false, duration: 90, startWall: 0 },
+      commBreak: { active: false, duration: 600, startWall: 0, label: 'HALF TIME' },
     };
     let S = Object.assign({}, DEF);
     let PLAYERS = { home: [], away: [] };
@@ -3894,25 +3904,32 @@
     }
     async function clearIntro() { S.playerIntro = null; await pushState(); toast('Intro cleared'); }
 
-    // ── COMMERCIAL BREAK ───────────────────────────────────────────────────────
+    // ── INTERVAL COUNTDOWN ─────────────────────────────────────────────────────
     function setCBDur(sec) {
-      if (!S.commBreak) S.commBreak = { active: false, duration: 90, startWall: 0 };
+      if (!S.commBreak) S.commBreak = { active: false, duration: 600, startWall: 0, label: 'HALF TIME' };
       S.commBreak.duration = sec;
       const inp = document.getElementById('cb-dur-i');
       if (inp) inp.value = sec;
     }
+    function setCBLabel(lbl) {
+      if (!S.commBreak) S.commBreak = { active: false, duration: 600, startWall: 0, label: 'HALF TIME' };
+      S.commBreak.label = lbl;
+      const inp = document.getElementById('cb-lbl-i');
+      if (inp) inp.value = lbl;
+    }
     let _cbStatusIv = null;
     async function startCommBreak() {
-      if (!S.commBreak) S.commBreak = { active: false, duration: 90, startWall: 0 };
+      if (!S.commBreak) S.commBreak = { active: false, duration: 600, startWall: 0, label: 'HALF TIME' };
       S.commBreak.active = true;
       S.commBreak.startWall = Date.now();
-      S.commBreak.duration = +(document.getElementById('cb-dur-i')?.value) || 90;
+      S.commBreak.duration = +(document.getElementById('cb-dur-i')?.value) || 600;
+      S.commBreak.label = document.getElementById('cb-lbl-i')?.value.trim().toUpperCase() || 'HALF TIME';
       await save();
       toast('Commercial break started');
       _startCBStatusTick();
     }
     async function endCommBreak() {
-      if (!S.commBreak) S.commBreak = { active: false, duration: 90, startWall: 0 };
+      if (!S.commBreak) S.commBreak = { active: false, duration: 600, startWall: 0, label: 'HALF TIME' };
       S.commBreak.active = false;
       await save();
       toast('Commercial break ended');
