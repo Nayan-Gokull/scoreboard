@@ -1934,15 +1934,24 @@
       </div>
       <div class="fg" style="margin-bottom:9px;"><label>Event Type</label>
         <select id="sc-type" onchange="onScTypeChange()">
-          <option value="yellowcard">🟨 Yellow Card (Sin Bin)</option>
-          <option value="redcard">🟥 Red Card</option>
-          <option value="penalty_conceded">⚠️ Penalty Conceded</option>
-          <option value="scrum">🔵 Scrum Awarded</option>
-          <option value="lineout">📐 Lineout Awarded</option>
-          <option value="turnover">🔄 Turnover</option>
-          <option value="knock_on">🤚 Knock-on</option>
-          <option value="sub">🔁 Substitution</option>
-          <option value="other">📋 Other</option>
+          <optgroup label="Scoring">
+            <option value="try">🏉 Try (+5)</option>
+            <option value="conversion">✅ Conversion (+2)</option>
+            <option value="penalty_goal">🎯 Penalty Goal (+3)</option>
+            <option value="drop_goal">⬇️ Drop Goal (+3)</option>
+            <option value="penalty_try">⚡ Penalty Try (+7)</option>
+          </optgroup>
+          <optgroup label="Events">
+            <option value="yellowcard">🟨 Yellow Card (Sin Bin)</option>
+            <option value="redcard">🟥 Red Card</option>
+            <option value="penalty_conceded">⚠️ Penalty Conceded</option>
+            <option value="scrum">🔵 Scrum Awarded</option>
+            <option value="lineout">📐 Lineout Awarded</option>
+            <option value="turnover">🔄 Turnover</option>
+            <option value="knock_on">🤚 Knock-on</option>
+            <option value="sub">🔁 Substitution</option>
+            <option value="other">📋 Other</option>
+          </optgroup>
         </select>
       </div>
       <!-- Normal player + time row -->
@@ -4051,6 +4060,12 @@
       } else if (evType === 'drop_goal') {
         if (mdSide === 'home') S.homeScore = clamp(S.homeScore + 3, 0, 999); else S.awayScore = clamp(S.awayScore + 3, 0, 999);
         S[bdKey(mdSide)].dropGoals++;
+      } else if (evType === 'conversion') {
+        if (mdSide === 'home') S.homeScore = clamp(S.homeScore + 2, 0, 999); else S.awayScore = clamp(S.awayScore + 2, 0, 999);
+        S[bdKey(mdSide)].conversions++;
+      } else if (evType === 'penalty_try') {
+        if (mdSide === 'home') S.homeScore = clamp(S.homeScore + 7, 0, 999); else S.awayScore = clamp(S.awayScore + 7, 0, 999);
+        S[bdKey(mdSide)].penaltyTries++;
       }
       const ev = { id: Date.now(), type: evType, side: mdSide, player: name, time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
       if (isSub && playerOff) ev.playerOff = playerOff;
@@ -4068,6 +4083,12 @@
       } else if (evType === 'drop_goal') {
         S.celebration = { text: 'DROP GOAL!', type: evType, scorer: name ? `${time} — ${name}` : time, seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
         S.lowerThird  = { type: '⬇️ DROP GOAL', main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+      } else if (evType === 'conversion') {
+        S.celebration = { text: 'CONVERTED!', type: evType, scorer: name ? `${time} — ${name}` : time, seq: Date.now(), duration: 2, sponsor: '' };
+        S.lowerThird  = { type: '✅ CONVERSION', main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 4 };
+      } else if (evType === 'penalty_try') {
+        S.celebration = { text: 'PENALTY TRY!', type: evType, scorer: `${time} — ${teamName}`, seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+        S.lowerThird  = { type: '⚡ PENALTY TRY', main: teamName, sub: `${time} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
       } else {
         S.celebration = { text: CEL[evType] || 'EVENT', type: evType, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: '' };
         S.lowerThird  = { type: (EICO[evType] || '📋') + ' ' + evType.replace(/_/g,' ').toUpperCase(), main: name || teamName, sub: `${time} — ${teamName}`, seq: Date.now(), duration: 6 };
