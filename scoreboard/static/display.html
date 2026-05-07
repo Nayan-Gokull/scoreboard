@@ -121,12 +121,12 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 
 #lt{position:fixed;bottom:80px;left:0;z-index:40;transform:translateX(-110%);transition:transform .5s cubic-bezier(.22,1,.36,1);pointer-events:none;}
 #lt.in{transform:translateX(0);}
-.lt-w{display:flex;align-items:stretch;height:58px;}
-.lt-ac{width:5px;background:var(--gold);}
-.lt-b{background:rgba(8,8,16,.92);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);padding:0 22px 0 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:320px;}
+.lt-w{display:flex;align-items:stretch;min-height:58px;}
+.lt-ac{width:5px;flex-shrink:0;background:var(--gold);}
+.lt-b{background:rgba(8,8,16,.92);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);border-right:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08);padding:8px 22px 8px 16px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:280px;max-width:520px;}
 .lt-et{font-family:'Bebas Neue',sans-serif;font-size:.72rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;}
-.lt-em{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.08em;color:#fff;line-height:1;}
-.lt-es{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.78rem;letter-spacing:.14em;color:rgba(255,255,255,.6);text-transform:uppercase;}
+.lt-em{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.08em;color:#fff;line-height:1.1;white-space:nowrap;}
+.lt-es{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.78rem;letter-spacing:.14em;color:rgba(255,255,255,.6);text-transform:uppercase;white-space:nowrap;}
 
 .ann{display:none;position:fixed;inset:0;z-index:200;background:rgba(6,6,16,.92);align-items:center;justify-content:center;backdrop-filter:blur(10px);pointer-events:none;}
 .ann.on{display:flex;}
@@ -856,12 +856,31 @@ function renderSponsors(s){
   if(dv2)dv2.classList.toggle('on',h2>0&&h3>0);
 }
 function showAnn(text,logoUrl){const el=document.getElementById('ann');document.getElementById('ann-txt').textContent=text;const sp=document.getElementById('ann-sp'),spImg=document.getElementById('ann-sp-img');if(logoUrl&&sp&&spImg){spImg.src=logoUrl;sp.classList.add('on');}else if(sp){sp.classList.remove('on');if(spImg)spImg.src='';}el.classList.remove('out');el.classList.add('on');clearTimeout(_annTimer);_annTimer=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.classList.remove('on','out'),600);},4000);}
-function showLT(lt){const el=document.getElementById('lt');document.getElementById('lt-et').textContent=lt.type||'EVENT';document.getElementById('lt-em').textContent=lt.main||'';document.getElementById('lt-es').textContent=lt.sub||'';const sp=document.getElementById('lt-sp'),spImg=document.getElementById('lt-sp-img');if(lt.logo&&sp&&spImg){spImg.src=lt.logo;sp.classList.add('on');}else if(sp){sp.classList.remove('on');if(spImg)spImg.src='';}el.classList.add('in');clearTimeout(_ltTimer);_ltTimer=setTimeout(()=>el.classList.remove('in'),(lt.duration||5)*1000);}
+function _subColor(s){
+  if(!s)return'';
+  // Colour only the player name; leave " · time — team" in default dim colour
+  return s
+    .replace(/^(↑\s*)([^·]+)(.*)/,'<span style="color:#66bb6a">$1$2</span><span style="color:rgba(255,255,255,.55)">$3</span>')
+    .replace(/^(↓\s*)([^·]+)(.*)/,'<span style="color:#ef5350">$1$2</span><span style="color:rgba(255,255,255,.55)">$3</span>');
+}
+function showLT(lt){const el=document.getElementById('lt');document.getElementById('lt-et').textContent=lt.type||'EVENT';const isSub=lt.type==='🔁 SUBSTITUTION';document.getElementById('lt-em').innerHTML=isSub?_subColor(lt.main):lt.main||'';document.getElementById('lt-es').innerHTML=isSub?_subColor(lt.sub):lt.sub||'';const sp=document.getElementById('lt-sp'),spImg=document.getElementById('lt-sp-img');if(lt.logo&&sp&&spImg){spImg.src=lt.logo;sp.classList.add('on');}else if(sp){sp.classList.remove('on');if(spImg)spImg.src='';}el.classList.add('in');clearTimeout(_ltTimer);_ltTimer=setTimeout(()=>el.classList.remove('in'),(lt.duration||5)*1000);}
 function showCel(cel){
   const layer=document.getElementById('cel');
   layer.classList.remove('out');
   document.getElementById('cel-t').textContent=cel.text||'GOAL!';
-  document.getElementById('cel-s').textContent=cel.scorer||'';
+  const celS=document.getElementById('cel-s');
+  if(cel.type==='sub'){
+    const parts=(cel.scorer||'').split(/\s{2,}/);
+    celS.style.color='transparent';
+    celS.innerHTML=parts.map(p=>{
+      if(p.startsWith('↑'))return`<span style="color:#66bb6a">${p}</span>`;
+      if(p.startsWith('↓'))return`<span style="color:#ef5350">${p}</span>`;
+      return p;
+    }).join('&nbsp;&nbsp;');
+  }else{
+    celS.style.color='';
+    celS.innerHTML=cel.scorer||'';
+  }
   const sp=document.getElementById('cel-sp'),spImg=document.getElementById('cel-sp-img');
   if(cel.sponsor&&sp&&spImg){spImg.src=cel.sponsor;sp.classList.add('on');}
   else if(sp){sp.classList.remove('on');if(spImg)spImg.src='';}

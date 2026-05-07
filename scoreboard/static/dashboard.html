@@ -1925,13 +1925,8 @@
           <div id="md-an">Team 2</div>
         </div>
       </div>
-      <div class="g2" style="margin-bottom:9px;">
-        <div class="fg"><label>Player</label><input type="text" id="sc-name" placeholder="e.g. J. Smith"
-            list="dl-sc-players" autocomplete="off"><datalist id="dl-sc-players"></datalist></div>
-        <div class="fg"><label>Time</label><input type="text" id="sc-time" placeholder="e.g. 45'"></div>
-      </div>
-      <div class="fg"><label>Event Type</label>
-        <select id="sc-type">
+      <div class="fg" style="margin-bottom:9px;"><label>Event Type</label>
+        <select id="sc-type" onchange="onScTypeChange()">
           <option value="goal">⚽ Goal</option>
           <option value="try">🏉 Try</option>
           <option value="basket">🏀 Basket</option>
@@ -1943,6 +1938,22 @@
           <option value="foul">⚠️ Foul</option>
           <option value="other">📋 Other</option>
         </select>
+      </div>
+      <!-- Normal player + time row -->
+      <div class="g2" style="margin-bottom:9px;" id="sc-normal-row">
+        <div class="fg"><label>Player</label><input type="text" id="sc-name" placeholder="e.g. J. Smith"
+            list="dl-sc-players" autocomplete="off"><datalist id="dl-sc-players"></datalist></div>
+        <div class="fg"><label>Time</label><input type="text" id="sc-time" placeholder="e.g. 45'"></div>
+      </div>
+      <!-- Sub-specific two-player row (hidden by default) -->
+      <div id="sc-sub-row" style="display:none;margin-bottom:9px;">
+        <div class="g2" style="margin-bottom:6px;">
+          <div class="fg"><label>↑ Player On</label><input type="text" id="sc-sub-on" placeholder="Coming on"
+              list="dl-sc-players" autocomplete="off"></div>
+          <div class="fg"><label>↓ Player Off</label><input type="text" id="sc-sub-off" placeholder="Coming off"
+              list="dl-sc-sub-off" autocomplete="off"><datalist id="dl-sc-sub-off"></datalist></div>
+        </div>
+        <div class="fg"><label>Time</label><input type="text" id="sc-sub-time" placeholder="e.g. 65'"></div>
       </div>
       <div class="modal-f">
         <button class="btn btn-gh btn-sm" onclick="closeMd()">Cancel</button>
@@ -1970,8 +1981,19 @@
             <div class="ni operator-only" onclick="nav('score',this)"><span class="ni-ic">📺</span> Display Control</div>
             <div class="ni" onclick="nav('timer',this)"><span class="ni-ic">⏱️</span> Timer</div>
             <div class="ni admin-only" onclick="nav('events',this)"><span class="ni-ic">📜</span> Event Log</div>
-            <div class="ni admin-only" onclick="nav('players',this)"><span class="ni-ic">👥</span> Players</div>
+            <div class="ni" onclick="nav('announce',this)"><span class="ni-ic">📣</span> Announce</div>
+          </div>
+        </div>
+
+        <!-- MATCH SETUP GROUP -->
+        <div class="nav-group collapsed" id="ng-match">
+          <div class="nav-sec" onclick="toggleGroup('ng-match')">
+            <span class="ns-label">Match Setup</span>
+            <span class="ns-arrow">▾</span>
+          </div>
+          <div class="nav-items">
             <div class="ni" onclick="nav('teams',this)"><span class="ni-ic">🛡️</span> Teams</div>
+            <div class="ni admin-only" onclick="nav('players',this)"><span class="ni-ic">👥</span> Players</div>
             <div class="ni" onclick="nav('stats',this)"><span class="ni-ic">📊</span> Stats</div>
           </div>
         </div>
@@ -1985,8 +2007,7 @@
           <div class="nav-items">
             <div class="ni" onclick="nav('sponsors',this)"><span class="ni-ic">🏷️</span> Sponsors</div>
             <div class="ni" onclick="nav('adslots',this)"><span class="ni-ic">🖼️</span> Ad Slots</div>
-            <div class="ni" onclick="nav('announce',this)"><span class="ni-ic">📣</span> Announce</div>
-            <div class="ni" onclick="nav('presets',this)"><span class="ni-ic">🎨</span> Presets</div>
+            <div class="ni" onclick="nav('presets',this)"><span class="ni-ic">🎨</span> Themes</div>
           </div>
         </div>
 
@@ -2107,22 +2128,10 @@
             <button class="gcs-btn" id="gcs-final"    onclick="qState('FINAL')">🏁 Full Time</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-acc admin-only" onclick="location.href='/setup'">+ New Game</button>
-            <button class="btn btn-dg admin-only" onclick="finalizeGame()">🗄 Archive</button>
+            <button class="btn btn-dg admin-only" onclick="finalizeGame()">🗄 End &amp; Archive</button>
           </div>
         </div>
 
-        <div class="card">
-          <div class="ct">Sport Mode</div>
-          <div class="sp-tabs">
-            <div class="sp-tab active" id="tab-soccer" onclick="setSport('soccer')"><span class="si">⚽</span><span
-                class="sn">Soccer</span></div>
-            <div class="sp-tab" id="tab-basketball" onclick="setSport('basketball')"><span class="si">🏀</span><span
-                class="sn">Basketball</span></div>
-            <div class="sp-tab" id="tab-rugby" onclick="setSport('rugby')"><span class="si">🏉</span><span
-                class="sn">Rugby</span></div>
-          </div>
-        </div>
         <div class="card admin-only">
           <div class="ct">Scoreboard</div>
           <div class="g-vs">
@@ -2148,39 +2157,36 @@
           </div>
         </div>
         <div class="card">
-          <div class="ct">Period & Status</div>
-          <div class="g3" style="align-items:end;">
+          <div class="ct">Period &amp; Possession</div>
+          <div class="g2" style="align-items:end;">
             <div class="fg"><label>Period</label><select id="per-sel" onchange="save()"></select></div>
-            <div class="fg"><label>Status</label><select id="st-sel" onchange="save()">
-                <option>SETUP</option>
-                <option>LIVE</option>
-                <option>HALFTIME</option>
-                <option>IDEAL</option>
-                <option>FINAL</option>
-                <option>DELAY</option>
-                <option>PRE-GAME</option>
-              </select></div>
             <div class="fg"><label>Possession</label><select id="poss-sel" onchange="save()">
                 <option value="none">— None —</option>
                 <option id="poss-h" value="home">Team 1</option>
                 <option id="poss-a" value="away">Team 2</option>
               </select></div>
           </div>
+          <!-- st-sel kept hidden — still needed by qHalf/qFinal JS -->
+          <select id="st-sel" style="display:none;" onchange="save()">
+            <option>SETUP</option><option>LIVE</option><option>HALFTIME</option>
+            <option>IDEAL</option><option>FINAL</option><option>DELAY</option><option>PRE-GAME</option>
+          </select>
         </div>
         <div class="card admin-only" id="ex-card">
-          <div class="ct">Extras</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="ct" style="margin-bottom:0;">Extras</div>
+            <button class="btn btn-dg btn-xs" onclick="resetEx()">↺ Reset</button>
+          </div>
           <div id="ex-cont"></div>
         </div>
         <div class="card">
           <div class="ct">Quick Actions</div>
           <div class="qg">
-            <button class="btn btn-gh" onclick="qHalf()">🏟️ Halftime</button>
-            <button class="btn btn-gh" onclick="qFinal()">🏁 Final Whistle</button>
             <button class="btn btn-gh" onclick="nextPer()">⏭️ Next Period</button>
             <button class="btn btn-gh" onclick="swapPoss()">↔️ Swap Poss.</button>
-            <button class="btn btn-gh" onclick="resetEx()">🔄 Reset Extras</button>
-            <button class="btn btn-dg admin-only" onclick="fullReset()">🗑 Reset</button>
           </div>
+          <div class="hr" style="margin:10px 0;"></div>
+          <button class="btn btn-dg btn-sm admin-only" style="width:100%;" onclick="fullReset()">🗑 Full Reset</button>
         </div>
       </div>
 
@@ -2231,18 +2237,30 @@
         </div>
         <div class="card">
           <div class="ct">Manual Event</div>
-          <div class="g3" style="align-items:end;margin-bottom:8px;">
-            <div class="fg"><label>Type</label><select id="me-type">
+          <div class="g2" style="align-items:end;margin-bottom:8px;">
+            <div class="fg"><label>Type</label><select id="me-type" onchange="onMeTypeChange()">
                 <option value="goal">⚽ Goal</option>
-                <option value="yellowcard">🟨 Yellow</option>
-                <option value="redcard">🟥 Red</option>
+                <option value="yellowcard">🟨 Yellow Card</option>
+                <option value="redcard">🟥 Red Card</option>
                 <option value="sub">🔁 Sub</option>
                 <option value="penalty">🎯 Penalty</option>
+                <option value="foul">⚠️ Foul</option>
                 <option value="other">📋 Other</option>
               </select></div>
-            <div class="fg"><label>Player</label><input type="text" id="me-player" placeholder="J. Smith"
-                list="dl-all-players" autocomplete="off"><datalist id="dl-all-players"></datalist></div>
             <div class="fg"><label>Time</label><input type="text" id="me-time" placeholder="67'"></div>
+          </div>
+          <!-- Normal player row -->
+          <div class="fg" style="margin-bottom:8px;" id="me-normal-row">
+            <label>Player</label>
+            <input type="text" id="me-player" placeholder="J. Smith" list="dl-all-players" autocomplete="off">
+            <datalist id="dl-all-players"></datalist>
+          </div>
+          <!-- Sub-specific row -->
+          <div id="me-sub-row" style="display:none;margin-bottom:8px;">
+            <div class="g2">
+              <div class="fg"><label>↑ Player On</label><input type="text" id="me-sub-on" placeholder="Coming on" list="dl-all-players" autocomplete="off"></div>
+              <div class="fg"><label>↓ Player Off</label><input type="text" id="me-sub-off" placeholder="Coming off" list="dl-all-players" autocomplete="off"></div>
+            </div>
           </div>
           <div class="g2">
             <button class="btn btn-gh" onclick="addEv('home')">+ Home: <span id="me-hn">Team 1</span></button>
@@ -2258,6 +2276,14 @@
       <!-- ══ TEAMS ══ -->
       <div class="page" id="page-teams">
         <div class="pt">🛡️ <span>Team</span> Settings</div>
+        <div class="card">
+          <div class="ct">Sport Mode</div>
+          <div class="sp-tabs">
+            <div class="sp-tab active" id="tab-soccer" onclick="setSport('soccer')"><span class="si">⚽</span><span class="sn">Soccer</span></div>
+            <div class="sp-tab" id="tab-basketball" onclick="setSport('basketball')"><span class="si">🏀</span><span class="sn">Basketball</span></div>
+            <div class="sp-tab" id="tab-rugby" onclick="setSport('rugby')"><span class="si">🏉</span><span class="sn">Rugby</span></div>
+          </div>
+        </div>
         <div class="card">
           <div class="ct">Match Info</div>
           <div class="g3">
@@ -2438,7 +2464,7 @@
 
       <!-- ══ PRESETS ══ -->
       <div class="page" id="page-presets">
-        <div class="pt">🎨 <span>Graphic</span> Presets</div>
+        <div class="pt">🎨 <span>Colors</span> &amp; Themes</div>
         <div class="card">
           <div class="ct">Color Presets</div>
           <div class="pre-g" id="pre-grid"></div>
@@ -2511,6 +2537,14 @@
                 <button class="btn btn-dg btn-sm" onclick="setBugVisible(false)">✕ Hide</button>
               </div>
             </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="ct">Score Bug <span style="font-size:.64rem;font-weight:400;color:var(--dim);margin-left:6px;">Compact score overlay during video playback</span></div>
+          <p style="font-size:.82rem;color:var(--dim);margin-bottom:9px;line-height:1.5;">Stays visible while a video feed is active. Toggle with <kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 6px;font-size:.78rem;">B</kbd> on keyboard.</p>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-grn btn-f" onclick="toggleBug(true)">🟢 Show Bug</button>
+            <button class="btn btn-dg btn-f" onclick="toggleBug(false)">✕ Hide Bug</button>
           </div>
         </div>
         <div class="card">
@@ -2685,14 +2719,6 @@
           <div style="display:flex;gap:7px;margin-top:9px;"><button class="btn btn-org" style="flex:1;"
               onclick="triggerVAd()">📡 Show Ad on Feed</button><button class="btn btn-gh" onclick="hideVAd()">✕
               Hide</button></div>
-        </div>
-        <div class="card">
-          <div class="ct">Score Bug</div>
-          <p style="font-size:.82rem;color:var(--dim);margin-bottom:9px;line-height:1.5;">Compact score overlay shown in the corner during video playback. Toggle with <kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:1px 6px;font-size:.78rem;">B</kbd> on keyboard.</p>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-grn btn-f" onclick="toggleBug(true)">🟢 Show Bug</button>
-            <button class="btn btn-dg btn-f" onclick="toggleBug(false)">✕ Hide Bug</button>
-          </div>
         </div>
       </div>
 
@@ -3632,13 +3658,37 @@
     function adjEx(k, d) { S.extras[k] = clamp((S.extras[k] || 0) + d, 0, 99); const el = document.getElementById('ex-' + k); if (el) el.textContent = S.extras[k]; S.stats[k] = S.extras[k]; save(); }
 
     // ── MODAL ──────────────────────────────────────────────────────────────────
-    function openMd(side, val, label) { mdSide = side; mdVal = val; document.getElementById('md-lbl').textContent = label || 'Score'; document.getElementById('md-hn').textContent = S.homeTeam; document.getElementById('md-an').textContent = S.awayTeam; document.getElementById('sc-name').value = ''; document.getElementById('sc-time').value = fmtTime(timerSecs); pickTeam(side); updateMdDroplist(side); document.getElementById('sc-modal').classList.add('on'); setTimeout(() => document.getElementById('sc-name').focus(), 80); }
+    function openMd(side, val, label) {
+      mdSide = side; mdVal = val;
+      document.getElementById('md-lbl').textContent = label || 'Score';
+      document.getElementById('md-hn').textContent = S.homeTeam;
+      document.getElementById('md-an').textContent = S.awayTeam;
+      document.getElementById('sc-name').value = '';
+      document.getElementById('sc-time').value = fmtTime(timerSecs);
+      document.getElementById('sc-sub-on').value = '';
+      document.getElementById('sc-sub-off').value = '';
+      document.getElementById('sc-sub-time').value = fmtTime(timerSecs);
+      onScTypeChange();
+      pickTeam(side); updateMdDroplist(side);
+      document.getElementById('sc-modal').classList.add('on');
+      const isSub = document.getElementById('sc-type').value === 'sub';
+      setTimeout(() => document.getElementById(isSub ? 'sc-sub-on' : 'sc-name').focus(), 80);
+    }
+    function onScTypeChange() {
+      const isSub = document.getElementById('sc-type').value === 'sub';
+      document.getElementById('sc-normal-row').style.display = isSub ? 'none' : '';
+      document.getElementById('sc-sub-row').style.display = isSub ? '' : 'none';
+    }
     function pickTeam(s) { mdSide = s; document.getElementById('md-h').classList.toggle('sel', s === 'home'); document.getElementById('md-a').classList.toggle('sel', s === 'away'); updateMdDroplist(s); }
     function closeMd() { document.getElementById('sc-modal').classList.remove('on'); }
     async function confirmScore() {
-      const name = document.getElementById('sc-name').value.trim();
-      const time = document.getElementById('sc-time').value.trim() || fmtTime(timerSecs);
       const evType = document.getElementById('sc-type').value;
+      const isSub = evType === 'sub';
+      const name = isSub
+        ? document.getElementById('sc-sub-on').value.trim()
+        : document.getElementById('sc-name').value.trim();
+      const playerOff = isSub ? document.getElementById('sc-sub-off').value.trim() : '';
+      const time = (isSub ? document.getElementById('sc-sub-time') : document.getElementById('sc-time')).value.trim() || fmtTime(timerSecs);
       const teamName = mdSide === 'home' ? S.homeTeam : S.awayTeam;
       const isScoring = SCORE_EVENTS.has(evType) && mdVal > 0;
       pushUndo(`${evType} ${mdSide}`);
@@ -3647,10 +3697,16 @@
         else S.awayScore = clamp(S.awayScore + mdVal, 0, 999);
       }
       const ev = { id: Date.now(), type: evType, side: mdSide, player: name, time, team: teamName, score: `${S.homeScore}-${S.awayScore}` };
+      if (isSub && playerOff) ev.playerOff = playerOff;
       S.events.push(ev);
       updatePlayerStat(name, evType);
-      S.celebration = { text: CEL[evType] || SPORTS[S.sport].cel, type: evType, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
-      S.lowerThird  = { type: (EICO[evType] || '📋') + ' ' + evType.toUpperCase(), main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+      if (isSub) {
+        S.celebration = { text: 'SUBSTITUTION', type: evType, scorer: [name && `↑ ${name}`, playerOff && `↓ ${playerOff}`].filter(Boolean).join('  '), seq: Date.now(), duration: 3, sponsor: '' };
+        S.lowerThird  = { type: '🔁 SUBSTITUTION', main: name ? `↑ ${name}` : teamName, sub: playerOff ? `↓ ${playerOff} · ${time} — ${teamName}` : `${time} — ${teamName}`, seq: Date.now(), duration: 6 };
+      } else {
+        S.celebration = { text: CEL[evType] || SPORTS[S.sport].cel, type: evType, scorer: name ? `${time} — ${name}` : '', seq: Date.now(), duration: 3, sponsor: S.celebSponsor || '' };
+        S.lowerThird  = { type: (EICO[evType] || '📋') + ' ' + evType.toUpperCase(), main: name || teamName, sub: `${time} — ${teamName} · ${S.homeScore}–${S.awayScore}`, seq: Date.now(), duration: 6 };
+      }
       closeMd(); await save(); renderEvs(); updateScUI(); renderPlayerStats();
       toast(isScoring ? `${teamName} +${mdVal}` : `${teamName}: ${evType}`);
     }
@@ -3722,11 +3778,32 @@
     function renderEvs() {
       const log = document.getElementById('ev-log');
       if (!S.events || !S.events.length) { log.innerHTML = '<div class="ev-empty">No events yet.</div>'; return; }
-      log.innerHTML = [...S.events].reverse().map(ev => `<div class="ev-i"><div class="ev-t">${ev.time || '—'}</div><div class="ev-ic">${EICO[ev.type] || '📋'}</div><div class="ev-b"><div class="ev-m">${ev.player || ev.team || '—'}</div><div class="ev-s">${ev.type.toUpperCase()} · ${ev.team} · ${ev.score || ''}</div></div><div class="ev-x" onclick="delEv(${ev.id})">✕</div></div>`).join('');
+      log.innerHTML = [...S.events].reverse().map(ev => {
+        const playerLabel = ev.type === 'sub'
+          ? [ev.player && `<span style="color:#4caf50;">↑ ${ev.player}</span>`, ev.playerOff && `<span style="color:#f44336;">↓ ${ev.playerOff}</span>`].filter(Boolean).join(' <span style="opacity:.35">/</span> ') || ev.team || '—'
+          : (ev.player || ev.team || '—');
+        return `<div class="ev-i"><div class="ev-t">${ev.time || '—'}</div><div class="ev-ic">${EICO[ev.type] || '📋'}</div><div class="ev-b"><div class="ev-m">${playerLabel}</div><div class="ev-s">${ev.type.toUpperCase()} · ${ev.team} · ${ev.score || ''}</div></div><div class="ev-x" onclick="delEv(${ev.id})">✕</div></div>`;
+      }).join('');
     }
     function delEv(id) { S.events = S.events.filter(e => e.id !== id); renderEvs(); save(); }
     function clearEvs() { if (!confirm('Clear all events?')) return; S.events = []; renderEvs(); save(); }
-    async function addEv(side) { const type = document.getElementById('me-type').value; const player = document.getElementById('me-player').value.trim(); const time = document.getElementById('me-time').value.trim() || fmtTime(timerSecs); const ev = { id: Date.now(), type, side, player, time, team: side === 'home' ? S.homeTeam : S.awayTeam, score: `${S.homeScore}-${S.awayScore}` }; S.events.push(ev); updatePlayerStat(player, type); renderEvs(); await save(); renderPlayerStats(); toast('Event added'); }
+    function onMeTypeChange() {
+      const isSub = document.getElementById('me-type').value === 'sub';
+      document.getElementById('me-normal-row').style.display = isSub ? 'none' : '';
+      document.getElementById('me-sub-row').style.display = isSub ? '' : 'none';
+    }
+    async function addEv(side) {
+      const type = document.getElementById('me-type').value;
+      const isSub = type === 'sub';
+      const player = isSub ? document.getElementById('me-sub-on').value.trim() : document.getElementById('me-player').value.trim();
+      const playerOff = isSub ? document.getElementById('me-sub-off').value.trim() : '';
+      const time = document.getElementById('me-time').value.trim() || fmtTime(timerSecs);
+      const ev = { id: Date.now(), type, side, player, time, team: side === 'home' ? S.homeTeam : S.awayTeam, score: `${S.homeScore}-${S.awayScore}` };
+      if (isSub && playerOff) ev.playerOff = playerOff;
+      S.events.push(ev);
+      updatePlayerStat(player, type);
+      renderEvs(); await save(); renderPlayerStats(); toast('Event added');
+    }
     async function showLT() { const ev = S.events[S.events.length - 1]; if (!ev) { toast('No events yet', true); return; } S.lowerThird = { type: (EICO[ev.type] || '📋') + ' ' + ev.type.toUpperCase(), main: ev.player || ev.team, sub: `${ev.time} — ${ev.team}`, seq: Date.now(), duration: 6 }; await pushState(); toast('Lower-third shown'); }
 
     // ── QUICK ACTIONS ──────────────────────────────────────────────────────────
@@ -4050,7 +4127,12 @@
     // ── EXPORT ──────────────────────────────────────────────────────────────────
     function exportReport() {
       const cfg = SPORTS[S.sport];
-      const evH = S.events.length ? S.events.map(ev => `<tr><td>${ev.time || '—'}</td><td>${EICO[ev.type] || ''} ${ev.type}</td><td>${ev.player || '—'}</td><td>${ev.team}</td><td>${ev.score || '—'}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#666;">No events</td></tr>';
+      const evH = S.events.length ? S.events.map(ev => {
+        const pl = ev.type === 'sub'
+          ? [ev.player && `<span style="color:#2e7d32">↑ ${ev.player}</span>`, ev.playerOff && `<span style="color:#c62828">↓ ${ev.playerOff}</span>`].filter(Boolean).join(' / ') || '—'
+          : (ev.player || '—');
+        return `<tr><td>${ev.time || '—'}</td><td>${EICO[ev.type] || ''} ${ev.type}</td><td>${pl}</td><td>${ev.team}</td><td>${ev.score || '—'}</td></tr>`;
+      }).join('') : '<tr><td colspan="5" style="text-align:center;color:#666;">No events</td></tr>';
       const stH = cfg.sk.map((k, i) => `<tr><td>${cfg.sl[i]}</td><td>${S.stats[k] || '—'}</td></tr>`).join('');
       const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Match Report</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;color:#111;padding:20px;}h1{font-size:2rem;}h2{color:#666;margin-bottom:20px;}.sb{display:flex;align-items:center;justify-content:center;gap:28px;background:#f5f5f5;padding:28px;border-radius:8px;margin:20px 0;}.sb .sc{font-size:4.5rem;font-weight:900;font-family:monospace;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}th{background:#111;color:#fff;padding:7px 11px;text-align:left;font-size:.78rem;text-transform:uppercase;}td{padding:7px 11px;border-bottom:1px solid #eee;font-size:.88rem;}.ft{margin-top:36px;font-size:.78rem;color:#999;text-align:center;}</style></head><body><h1>${S.leagueName}</h1><h2>${S.gameDate} · ${S.gameLocation} · ${S.gameStatus}</h2><div class="sb"><div><b>${S.homeTeam}</b></div><div class="sc">${S.homeScore}–${S.awayScore}</div><div><b>${S.awayTeam}</b></div></div><h3 style="margin-bottom:9px;">Events</h3><table><thead><tr><th>Time</th><th>Event</th><th>Player</th><th>Team</th><th>Score</th></tr></thead><tbody>${evH}</tbody></table><h3 style="margin-bottom:9px;">Statistics</h3><table><thead><tr><th>Stat</th><th>Value</th></tr></thead><tbody>${stH}</tbody></table><div class="ft">Generated · ${new Date().toLocaleString()}</div><script>window.print();<\/script></body></html>`;
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = `match-report-${Date.now()}.html`; a.click(); toast('Report exported');
@@ -4072,7 +4154,9 @@
     }
     function updateMdDroplist(side) {
       const players = (PLAYERS[side] || []);
-      document.getElementById('dl-sc-players').innerHTML = players.map(p => `<option value="${p.name}">#${p.number} ${p.name} · ${p.position}</option>`).join('');
+      const opts = players.map(p => `<option value="${p.name}">#${p.number} ${p.name} · ${p.position}</option>`).join('');
+      document.getElementById('dl-sc-players').innerHTML = opts;
+      document.getElementById('dl-sc-sub-off').innerHTML = opts;
     }
     function updatePlayerDroplists() {
       const all = [...(PLAYERS.home || []).map(p => ({ ...p, side: 'home' })), ...(PLAYERS.away || []).map(p => ({ ...p, side: 'away' }))];
