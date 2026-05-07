@@ -391,17 +391,17 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .sw-count{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.14em;color:rgba(255,255,255,.2);text-transform:uppercase;}
 
 /* ── SELFIE REVEAL ── */
-#sw-reveal{display:none;position:fixed;inset:0;z-index:238;align-items:center;justify-content:center;flex-direction:column;}
+#sw-reveal{display:none;position:fixed;inset:0;z-index:238;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;background:#000;}
 #sw-reveal.on{display:flex;animation:rev-in .55s ease both;}
 #sw-reveal.out{animation:rev-out .7s ease forwards;}
 @keyframes rev-in{from{opacity:0}to{opacity:1}}
 @keyframes rev-out{from{opacity:1}to{opacity:0}}
-.sw-rev-bg{position:absolute;inset:-60px;background-size:cover;background-position:center;filter:blur(34px);opacity:.6;transform:scale(1.05);pointer-events:none;}
-.sw-rev-scrim{position:absolute;inset:0;background:rgba(4,4,14,.52);pointer-events:none;}
+.sw-rev-bg{position:absolute;top:-60px;left:-60px;width:calc(100% + 120px);height:calc(100% + 120px);object-fit:cover;filter:blur(32px);opacity:.85;pointer-events:none;}
+.sw-rev-scrim{position:absolute;inset:0;background:rgba(4,4,14,.38);pointer-events:none;}
 .sw-rev-photo{position:relative;z-index:2;height:min(78vh,calc(42vw * 4/3));aspect-ratio:3/4;object-fit:cover;border-radius:18px;box-shadow:0 36px 100px rgba(0,0,0,.88),0 0 0 2px rgba(255,255,255,.07);}
-.sw-rev-sp{position:relative;z-index:2;margin-top:20px;background:#fff;border-radius:12px;padding:10px 26px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;}
-.sw-rev-sp-lbl{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(0,0,0,.32);}
-.sw-rev-sp-img{max-height:40px;max-width:170px;width:auto;object-fit:contain;display:block;}
+.sw-rev-sp{position:relative;z-index:2;margin-top:22px;background:rgba(255,255,255,.97);border-radius:14px;padding:14px 36px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:0 8px 40px rgba(0,0,0,.55);}
+.sw-rev-sp-lbl{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(0,0,0,.48);}
+.sw-rev-sp-img{max-height:56px;max-width:200px;width:auto;object-fit:contain;display:block;}
 
 /* ── GAME CODE GATE ── */
 #gc-gate{display:none;position:fixed;inset:0;z-index:999;background:radial-gradient(ellipse 120% 100% at 50% 40%,#0e0e24 0%,#05050f 100%);align-items:center;justify-content:center;flex-direction:column;pointer-events:all;}
@@ -507,7 +507,7 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 </div>
 
 <div id="sw-reveal">
-  <div class="sw-rev-bg" id="sw-rev-bg"></div>
+  <img class="sw-rev-bg" id="sw-rev-bg" src="" alt="">
   <div class="sw-rev-scrim"></div>
   <img class="sw-rev-photo" id="sw-rev-photo" src="" alt="">
   <div class="sw-rev-sp" id="sw-rev-sp" style="display:none;">
@@ -1159,12 +1159,11 @@ async function fetchSelfies(){
     _swQueue=[];
     const cnt=document.getElementById('sw-count');
     if(cnt)cnt.textContent=_swUrls.length?`${_swUrls.length} photo${_swUrls.length!==1?'s':''}`:'' ;
-    // fill empty slots immediately (no reveal for initial fill)
-    for(let i=0;i<SW_SLOTS;i++){
-      const slot=document.getElementById('sw-'+i);
-      if(slot){const img=slot.querySelector('img');if(img&&!img.getAttribute('data-url')&&_swUrls[i])swSetSlot(i,_swUrls[i]);}
+    if(isFirstFetch){
+      // Initial fill: populate empty slots in order
+      for(let i=0;i<SW_SLOTS&&i<_swUrls.length;i++) swSetSlot(i,_swUrls[i]);
     }
-    // queue reveal for genuinely new photos
+    // Queue reveal for genuinely new photos — reveal will also place each into the grid
     newUrls.forEach(u=>{_swRevealQueue.push(u);});
     processRevealQueue();
   }catch(_){}
@@ -1182,17 +1181,24 @@ function showSelfieReveal(url,done){
   const photo=document.getElementById('sw-rev-photo');
   const sp=document.getElementById('sw-rev-sp');
   const spImg=document.getElementById('sw-rev-sp-img');
-  bg.style.backgroundImage=`url(${url})`;
+  bg.src=url;
   photo.src=url;
   if(_swSponsor&&spImg){spImg.src=_swSponsor;sp.style.display='';}
   else{sp.style.display='none';}
+  // Place photo into next empty slot; fall back to rotation slot
+  let placed=false;
+  for(let i=0;i<SW_SLOTS;i++){
+    const slot=document.getElementById('sw-'+i);
+    if(slot){const img=slot.querySelector('img');if(img&&!img.getAttribute('data-url')){swSetSlot(i,url);placed=true;break;}}
+  }
+  if(!placed){swSetSlot(_swSlotIdx%SW_SLOTS,url);_swSlotIdx++;}
   rev.classList.remove('out');
   rev.classList.add('on');
   setTimeout(()=>{
     rev.classList.add('out');
     setTimeout(()=>{
       rev.classList.remove('on','out');
-      photo.src='';bg.style.backgroundImage='';
+      photo.src='';bg.src='';
       done();
     },700);
   },3000);
