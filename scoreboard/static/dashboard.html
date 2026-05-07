@@ -2520,6 +2520,15 @@
       <div class="page" id="page-announce">
         <div class="pt">📣 <span>Announcements</span></div>
         <div class="card">
+          <div class="ct">📋 Match Timeline — Story So Far</div>
+          <div style="font-size:.74rem;color:var(--dim);margin-bottom:10px;line-height:1.5;">Shows a full-screen event timeline on the display. Use during halftime to give viewers context of everything that happened.</div>
+          <div class="qg">
+            <button class="btn btn-acc" style="flex:1;" onclick="showTimeline()">▶ Show Timeline</button>
+            <button class="btn btn-gh" onclick="hideTimeline()">✕ Hide</button>
+          </div>
+          <div id="tl-status" style="font-size:.74rem;color:var(--dim);margin-top:7px;">Hidden</div>
+        </div>
+        <div class="card">
           <div class="ct">📺 Player Intro Broadcast</div>
           <div class="qg">
             <button class="btn btn-acc" style="position:relative;flex:1;" onclick="openIntroModal()">📺 Broadcast Player Intro<span class="key-badge">I</span></button>
@@ -3311,6 +3320,7 @@
       pollResultsOverlay: { active: false, seq: 0 },
       selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false, sponsorLogo: '' },
       commBreak: { active: false, duration: 600, startWall: 0, label: 'HALF TIME' },
+      timelineOv: { active: false },
     };
     let S = Object.assign({}, DEF);
     let PLAYERS = { home: [], away: [] };
@@ -3697,6 +3707,7 @@
       updateSelfieWallUI();
       renderCBStatus();
       if (S.commBreak?.active && !_cbStatusIv) _startCBStatusTick();
+      renderTLStatus();
     }
 
     // ── UNDO ───────────────────────────────────────────────────────────────────
@@ -3903,6 +3914,16 @@
       await pushState(); toast(`Intro: ${name}`);
     }
     async function clearIntro() { S.playerIntro = null; await pushState(); toast('Intro cleared'); }
+
+    // ── MATCH TIMELINE ─────────────────────────────────────────────────────────
+    async function showTimeline() { S.timelineOv = { active: true }; await pushState(); renderTLStatus(); toast('Timeline shown'); }
+    async function hideTimeline() { S.timelineOv = { active: false }; await pushState(); renderTLStatus(); toast('Timeline hidden'); }
+    function renderTLStatus() {
+      const el = document.getElementById('tl-status'); if (!el) return;
+      const on = !!(S.timelineOv && S.timelineOv.active);
+      el.textContent = on ? 'LIVE on display' : 'Hidden';
+      el.style.color = on ? '#4ade80' : 'var(--dim)';
+    }
 
     // ── INTERVAL COUNTDOWN ─────────────────────────────────────────────────────
     function setCBDur(sec) {

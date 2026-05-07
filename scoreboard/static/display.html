@@ -187,6 +187,30 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .intro-div{width:100px;height:2px;background:var(--gold);margin:18px auto;}
 .intro-stat{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;}
 
+/* ── match timeline overlay ── */
+#tl-ov{display:none;position:fixed;inset:0;z-index:185;background:rgba(4,4,14,.97);backdrop-filter:blur(20px);flex-direction:column;align-items:center;padding:32px 48px 28px;overflow:hidden;}
+#tl-ov.on{display:flex;animation:cel-in .45s cubic-bezier(.22,1,.36,1) both;}
+#tl-ov.out{animation:cel-out .5s ease forwards;}
+.tl-eyebrow{font-family:'Rajdhani',sans-serif;font-size:.72rem;letter-spacing:.4em;color:rgba(255,255,255,.3);text-align:center;margin-bottom:2px;}
+.tl-title{font-family:'Bebas Neue',sans-serif;font-size:2.6rem;letter-spacing:.12em;color:#fff;text-align:center;margin-bottom:22px;}
+.tl-scoreline{display:flex;align-items:center;gap:20px;margin-bottom:28px;}
+.tl-sn{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;width:200px;}
+.tl-sn.h{text-align:right;color:var(--a);}
+.tl-sn.a{text-align:left;color:var(--b);}
+.tl-sc{font-family:'Orbitron',monospace;font-weight:700;font-size:2.6rem;color:#fff;}
+.tl-sc-sep{font-family:'Rajdhani',sans-serif;font-size:1rem;color:rgba(255,255,255,.2);padding:0 4px;}
+.tl-events{flex:1;overflow-y:auto;width:100%;max-width:860px;display:flex;flex-direction:column;gap:6px;}
+.tl-row{display:grid;grid-template-columns:1fr 100px 1fr;align-items:center;min-height:40px;}
+.tl-cell-h{text-align:right;padding-right:14px;}
+.tl-cell-a{text-align:left;padding-left:14px;}
+.tl-mid{display:flex;flex-direction:column;align-items:center;gap:1px;border-left:1px solid rgba(255,255,255,.07);border-right:1px solid rgba(255,255,255,.07);}
+.tl-mid-ico{font-size:1.05rem;line-height:1;}
+.tl-mid-time{font-family:'Orbitron',monospace;font-size:.55rem;color:rgba(255,255,255,.35);letter-spacing:.05em;}
+.tl-player{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.9rem;color:#fff;line-height:1.2;}
+.tl-etype{font-family:'Rajdhani',sans-serif;font-size:.68rem;letter-spacing:.12em;color:rgba(255,255,255,.38);text-transform:uppercase;}
+.tl-snap{font-family:'Orbitron',monospace;font-size:.55rem;color:rgba(255,255,255,.2);}
+.tl-empty{text-align:center;color:rgba(255,255,255,.18);font-family:'Rajdhani',sans-serif;font-size:.9rem;letter-spacing:.25em;padding-top:40px;}
+
 /* ── commercial break overlay ── */
 #cb-ov{display:none;position:fixed;inset:0;z-index:360;background:radial-gradient(ellipse 90% 75% at 50% 45%,#0a0a1e 0%,#030308 100%);align-items:center;justify-content:center;flex-direction:column;gap:16px;}
 #cb-ov.on{display:flex;animation:cel-in .45s cubic-bezier(.22,1,.36,1) both;}
@@ -727,6 +751,19 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 <div id="sinbin-widget"></div>
 
 <!-- Player intro overlay -->
+<div id="tl-ov">
+  <div class="tl-eyebrow">MATCH REVIEW</div>
+  <div class="tl-title">STORY SO FAR</div>
+  <div class="tl-scoreline">
+    <div class="tl-sn h" id="tl-hname">Home</div>
+    <div class="tl-sc" id="tl-hscore">0</div>
+    <div class="tl-sc-sep">—</div>
+    <div class="tl-sc" id="tl-ascore">0</div>
+    <div class="tl-sn a" id="tl-aname">Away</div>
+  </div>
+  <div class="tl-events" id="tl-events"></div>
+</div>
+
 <div id="cb-ov">
   <div class="cb-title" id="cb-title">HALF TIME</div>
   <div class="cb-label">KICK OFF IN</div>
@@ -845,7 +882,7 @@ function apply(s){
   if(s.celebration&&s.celebration.seq!==_prev.celSeq){_prev.celSeq=s.celebration.seq;showCel(s.celebration);}
   if(s.vadSeq&&s.vadSeq!==_prev.vadSeq){_prev.vadSeq=s.vadSeq;if(s.vadCmd==='show'&&s.vadUrl)showVAd(s.vadUrl,s.vadType||'image',s.vadDuration||15);else if(s.vadCmd==='hide')closeVAd();}
   if(s.playerIntro&&s.playerIntro.seq!==_prev.introSeq){_prev.introSeq=s.playerIntro.seq;showIntro(s.playerIntro);}
-  _lastState=s;renderSinBinWidget(s);renderCommBreak(s);
+  _lastState=s;renderSinBinWidget(s);renderCommBreak(s);renderTimelineOv(s);
   handleSched(s);
   switchScreen(s.gameStatus);
   applyScreens(s);
@@ -953,6 +990,36 @@ function showIntro(p){
   _introTimer=setTimeout(()=>{ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);},(p.duration||6)*1000);
 }
 setInterval(()=>{if(_lastState){renderSinBinWidget(_lastState);renderCommBreak(_lastState);}},1000);
+
+const TL_ICONS={try:'🏉',conversion:'✅',conversion_miss:'❌',penalty_goal:'🎯',drop_goal:'⬇️',penalty_try:'⚡',yellowcard:'🟨',redcard:'🟥',goal:'⚽',owngoal:'⚽'};
+const TL_LABELS={try:'Try',conversion:'Conv',conversion_miss:'Miss',penalty_goal:'Pen Goal',drop_goal:'Drop Goal',penalty_try:'Pen Try',yellowcard:'Yellow Card',redcard:'Red Card',goal:'Goal',owngoal:'Own Goal'};
+function renderTimelineOv(s){
+  const ov=document.getElementById('tl-ov');if(!ov)return;
+  const active=!!(s.timelineOv&&s.timelineOv.active);
+  if(!active){
+    if(ov.classList.contains('on')){ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);}
+    return;
+  }
+  if(!ov.classList.contains('on')){ov.classList.remove('out');ov.classList.add('on');}
+  document.getElementById('tl-hname').textContent=s.homeTeam||'Home';
+  document.getElementById('tl-aname').textContent=s.awayTeam||'Away';
+  document.getElementById('tl-hscore').textContent=s.homeScore??0;
+  document.getElementById('tl-ascore').textContent=s.awayScore??0;
+  const events=s.events||[];
+  const el=document.getElementById('tl-events');
+  if(!events.length){el.innerHTML='<div class="tl-empty">NO EVENTS YET</div>';return;}
+  el.innerHTML=events.map(ev=>{
+    const ico=TL_ICONS[ev.type]||'📋';
+    const lbl=TL_LABELS[ev.type]||ev.type;
+    const isHome=ev.side==='home';
+    const cell=`<div class="tl-player">${ev.player||ev.team||''}</div><div class="tl-etype">${lbl}</div>${ev.score?`<div class="tl-snap">${ev.score.replace('-','–')}</div>`:''}`;
+    return`<div class="tl-row">
+      <div class="tl-cell-h">${isHome?cell:''}</div>
+      <div class="tl-mid"><span class="tl-mid-ico">${ico}</span><span class="tl-mid-time">${ev.time||''}</span></div>
+      <div class="tl-cell-a">${!isHome?cell:''}</div>
+    </div>`;
+  }).join('');
+}
 
 let _cbIv=null;
 function renderCommBreak(s){
