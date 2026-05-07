@@ -1088,25 +1088,10 @@ function renderQROv(s){
 }
 
 // ── SELFIE WALL ────────────────────────────────────────────────────────────
-let _swActive=false,_swQrInst=null,_swQrKey='',_swUrls=[],_swInterval=null;
-const SW_SLOTS=6,SW_ROTATE_MS=3000;
-let _swSlotIdx=0,_swQueue=[]; // rotation state
+let _swActive=false,_swQrInst=null,_swQrKey='',_swUrls=[],_swInterval=null,_swRotIv=null;
+const SW_SLOTS=6,SW_ROTATE_MS=3500;
 let _swSeen=new Set(),_swRevealQueue=[],_swRevealBusy=false,_swSponsor='';
-
-function _swNextUrl(){
-  // rebuild queue when exhausted or urls changed
-  if(_swQueue.length===0){
-    // shuffle a copy of _swUrls, excluding urls already visible in slots
-    const visible=new Set();
-    for(let i=0;i<SW_SLOTS;i++){const el=document.getElementById('sw-'+i);if(el){const img=el.querySelector('img');if(img&&img.getAttribute('data-url'))visible.add(img.getAttribute('data-url'));}}
-    let pool=_swUrls.filter(u=>!visible.has(u));
-    if(pool.length===0)pool=[..._swUrls]; // all shown — full reset
-    // Fisher-Yates shuffle
-    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
-    _swQueue=pool;
-  }
-  return _swQueue.shift();
-}
+let _swRotSlot=1,_swRotPtr=0; // rotation: slot 0 is pinned newest; 1-5 cycle through older
 
 function renderSelfieWall(s){
   const sw=s.selfieWall||{};
@@ -1130,13 +1115,24 @@ function renderSelfieWall(s){
   }
   if(active&&!_swActive){
     _swActive=true;
+    _swRotSlot=1;_swRotPtr=0;
     fetchSelfies();
-    // Refresh every 5s — fetchSelfies keeps grid sorted newest-first automatically
+    // Refresh list every 5s (also keeps slot 0 pinned to newest)
     _swInterval=setInterval(fetchSelfies,5000);
+    // Rotate slots 1-5 through older photos when >6 exist
+    _swRotIv=setInterval(()=>{
+      if(_swUrls.length<=SW_SLOTS)return;
+      const pool=_swUrls.slice(1); // all except newest (slot 0 is pinned)
+      const url=pool[_swRotPtr%pool.length];
+      swSetSlot(_swRotSlot,url);
+      _swRotSlot=_swRotSlot>=SW_SLOTS-1?1:_swRotSlot+1;
+      _swRotPtr++;
+    },SW_ROTATE_MS);
   }
   if(!active&&_swActive){
     _swActive=false;
     if(_swInterval){clearInterval(_swInterval);_swInterval=null;}
+    if(_swRotIv){clearInterval(_swRotIv);_swRotIv=null;}
   }
 }
 
@@ -1150,11 +1146,13 @@ async function fetchSelfies(){
     const newUrls=isFirstFetch?[]:allUrls.filter(u=>!_swSeen.has(u));
     allUrls.forEach(u=>_swSeen.add(u));
     _swUrls=allUrls;
-    _swQueue=[];
     const cnt=document.getElementById('sw-count');
     if(cnt)cnt.textContent=_swUrls.length?`${_swUrls.length} photo${_swUrls.length!==1?'s':''}`:'' ;
-    // Always sync grid: slot 0=newest, slot 1=2nd newest, … swSetSlot skips unchanged slots
-    for(let i=0;i<SW_SLOTS;i++) swSetSlot(i,_swUrls[i]||'');
+    // Slot 0 always = newest; slots 1-5 filled on first load then owned by rotation
+    swSetSlot(0,_swUrls[0]||'');
+    if(isFirstFetch){
+      for(let i=1;i<SW_SLOTS&&i<_swUrls.length;i++) swSetSlot(i,_swUrls[i]);
+    }
     // Queue reveal for genuinely new photos
     newUrls.forEach(u=>{_swRevealQueue.push(u);});
     processRevealQueue();
