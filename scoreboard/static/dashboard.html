@@ -2499,6 +2499,25 @@
           <div style="font-size:.74rem;color:var(--dim);margin-top:7px;line-height:1.5;">Shows a full-screen "Introducing…" card on the display with the player's number, name, position, and stat line.</div>
         </div>
         <div class="card">
+          <div class="ct">📺 Commercial Break</div>
+          <div class="fg" style="margin-bottom:9px;">
+            <label>Duration</label>
+            <div class="qg" style="flex-wrap:wrap;">
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(30)">30s</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(60)">60s</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(90)">90s</button>
+              <button class="btn btn-gh btn-sm" onclick="setCBDur(120)">2 min</button>
+              <input type="number" id="cb-dur-i" value="90" min="10" max="600" style="width:62px;text-align:center;" oninput="if(!S.commBreak)S.commBreak={};S.commBreak.duration=+this.value">
+              <span style="font-size:.75rem;color:var(--dim);align-self:center;">sec</span>
+            </div>
+          </div>
+          <div class="qg">
+            <button class="btn btn-acc" style="flex:1;" onclick="startCommBreak()">▶ Start Break</button>
+            <button class="btn btn-gh" onclick="endCommBreak()">■ End Early</button>
+          </div>
+          <div id="cb-status" style="font-size:.74rem;color:var(--dim);margin-top:7px;">Inactive</div>
+        </div>
+        <div class="card">
           <div class="ct">Full-Screen Overlay <span
               style="font-size:.64rem;font-weight:400;color:var(--dim);margin-left:5px;">Auto-hides after 4s</span>
           </div>
@@ -3281,6 +3300,7 @@
       poll: { active: false, question: '', options: [], votes: {}, seq: 0 },
       pollResultsOverlay: { active: false, seq: 0 },
       selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false, sponsorLogo: '' },
+      commBreak: { active: false, duration: 90, startWall: 0 },
     };
     let S = Object.assign({}, DEF);
     let PLAYERS = { home: [], away: [] };
@@ -3665,6 +3685,8 @@
       updateQRUI();
       updatePollResOvUI();
       updateSelfieWallUI();
+      renderCBStatus();
+      if (S.commBreak?.active && !_cbStatusIv) _startCBStatusTick();
     }
 
     // ── UNDO ───────────────────────────────────────────────────────────────────
@@ -3871,6 +3893,56 @@
       await pushState(); toast(`Intro: ${name}`);
     }
     async function clearIntro() { S.playerIntro = null; await pushState(); toast('Intro cleared'); }
+
+    // ── COMMERCIAL BREAK ───────────────────────────────────────────────────────
+    function setCBDur(sec) {
+      if (!S.commBreak) S.commBreak = { active: false, duration: 90, startWall: 0 };
+      S.commBreak.duration = sec;
+      const inp = document.getElementById('cb-dur-i');
+      if (inp) inp.value = sec;
+    }
+    let _cbStatusIv = null;
+    async function startCommBreak() {
+      if (!S.commBreak) S.commBreak = { active: false, duration: 90, startWall: 0 };
+      S.commBreak.active = true;
+      S.commBreak.startWall = Date.now();
+      S.commBreak.duration = +(document.getElementById('cb-dur-i')?.value) || 90;
+      await save();
+      toast('Commercial break started');
+      _startCBStatusTick();
+    }
+    async function endCommBreak() {
+      if (!S.commBreak) S.commBreak = { active: false, duration: 90, startWall: 0 };
+      S.commBreak.active = false;
+      await save();
+      toast('Commercial break ended');
+      renderCBStatus();
+    }
+    function renderCBStatus() {
+      const el = document.getElementById('cb-status');
+      if (!el) return;
+      const cb = S.commBreak || {};
+      if (!cb.active) {
+        el.textContent = 'Inactive';
+        el.style.color = 'var(--dim)';
+        if (_cbStatusIv) { clearInterval(_cbStatusIv); _cbStatusIv = null; }
+        return;
+      }
+      const rem = Math.max(0, (cb.duration || 90) - (Date.now() - (cb.startWall || 0)) / 1000);
+      if (rem <= 0) {
+        el.textContent = 'Break complete';
+        el.style.color = 'var(--dim)';
+        if (_cbStatusIv) { clearInterval(_cbStatusIv); _cbStatusIv = null; }
+      } else {
+        el.textContent = `LIVE — ${Math.ceil(rem)}s remaining`;
+        el.style.color = '#facc15';
+      }
+    }
+    function _startCBStatusTick() {
+      if (_cbStatusIv) clearInterval(_cbStatusIv);
+      _cbStatusIv = setInterval(renderCBStatus, 1000);
+      renderCBStatus();
+    }
     // ── BUILD SPORT UI ────────────────────────────────────────────────────────
     function buildSportUI() {
       const periods = S.rugbyFormat === '7s' ? RUGBY.periods7s : RUGBY.periods15s;

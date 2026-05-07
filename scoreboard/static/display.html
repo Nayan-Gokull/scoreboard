@@ -187,6 +187,17 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .intro-div{width:100px;height:2px;background:var(--gold);margin:18px auto;}
 .intro-stat{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;}
 
+/* ── commercial break overlay ── */
+#cb-ov{display:none;position:fixed;inset:0;z-index:360;background:radial-gradient(ellipse 90% 75% at 50% 45%,#0a0a1e 0%,#030308 100%);align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+#cb-ov.on{display:flex;animation:cel-in .45s cubic-bezier(.22,1,.36,1) both;}
+#cb-ov.out{animation:cel-out .5s ease forwards;}
+.cb-label{font-family:'Rajdhani',sans-serif;font-size:.78rem;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.cb-title{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:.14em;color:#fff;}
+.cb-clk{font-family:'Orbitron',monospace;font-weight:700;font-size:7.5rem;line-height:1;color:#fff;text-shadow:0 0 80px rgba(255,255,255,.12);}
+.cb-bar-track{width:320px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin-top:4px;}
+.cb-bar-fill{height:100%;background:rgba(255,255,255,.5);border-radius:2px;transition:width .95s linear;}
+.cb-back{font-family:'Rajdhani',sans-serif;font-size:.88rem;letter-spacing:.22em;color:rgba(255,255,255,.35);}
+
 #conn{position:fixed;top:50px;right:14px;z-index:999;font-family:'Rajdhani',sans-serif;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:3px;background:rgba(255,23,68,.2);color:#ff6090;border:1px solid rgba(255,23,68,.3);display:none;}
 #conn.show{display:block;}
 
@@ -716,6 +727,14 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 <div id="sinbin-widget"></div>
 
 <!-- Player intro overlay -->
+<div id="cb-ov">
+  <div class="cb-label">LIVE BROADCAST</div>
+  <div class="cb-title">COMMERCIAL BREAK</div>
+  <div class="cb-clk" id="cb-clk">00:00</div>
+  <div class="cb-bar-track"><div class="cb-bar-fill" id="cb-bar" style="width:100%"></div></div>
+  <div class="cb-back" id="cb-back">BACK SOON</div>
+</div>
+
 <div id="intro-ov">
   <div class="intro-wrap">
     <div class="intro-eye">INTRODUCING</div>
@@ -826,7 +845,7 @@ function apply(s){
   if(s.celebration&&s.celebration.seq!==_prev.celSeq){_prev.celSeq=s.celebration.seq;showCel(s.celebration);}
   if(s.vadSeq&&s.vadSeq!==_prev.vadSeq){_prev.vadSeq=s.vadSeq;if(s.vadCmd==='show'&&s.vadUrl)showVAd(s.vadUrl,s.vadType||'image',s.vadDuration||15);else if(s.vadCmd==='hide')closeVAd();}
   if(s.playerIntro&&s.playerIntro.seq!==_prev.introSeq){_prev.introSeq=s.playerIntro.seq;showIntro(s.playerIntro);}
-  _lastState=s;renderSinBinWidget(s);
+  _lastState=s;renderSinBinWidget(s);renderCommBreak(s);
   handleSched(s);
   switchScreen(s.gameStatus);
   applyScreens(s);
@@ -933,7 +952,30 @@ function showIntro(p){
   clearTimeout(_introTimer);
   _introTimer=setTimeout(()=>{ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);},(p.duration||6)*1000);
 }
-setInterval(()=>{if(_lastState)renderSinBinWidget(_lastState);},1000);
+setInterval(()=>{if(_lastState){renderSinBinWidget(_lastState);renderCommBreak(_lastState);}},1000);
+
+let _cbIv=null;
+function renderCommBreak(s){
+  const cb=s.commBreak||{};
+  const ov=document.getElementById('cb-ov');if(!ov)return;
+  if(!cb.active){
+    if(ov.classList.contains('on')){ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);}
+    return;
+  }
+  const elapsed=(Date.now()-(cb.startWall||Date.now()))/1000;
+  const total=cb.duration||90;
+  const rem=Math.max(0,total-elapsed);
+  if(rem<=0){
+    if(ov.classList.contains('on')){ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);}
+    return;
+  }
+  if(!ov.classList.contains('on')){ov.classList.remove('out');ov.classList.add('on');}
+  const mm=String(Math.floor(rem/60)).padStart(2,'0'),ss=String(Math.ceil(rem%60)).padStart(2,'0');
+  document.getElementById('cb-clk').textContent=`${mm}:${ss}`;
+  document.getElementById('cb-bar').style.width=(rem/total*100)+'%';
+  const remCeil=Math.ceil(rem);
+  document.getElementById('cb-back').textContent=`BACK IN ${remCeil} SECOND${remCeil!==1?'S':''}`;
+}
 function showAnn(text,logoUrl){const el=document.getElementById('ann');document.getElementById('ann-txt').textContent=text;const sp=document.getElementById('ann-sp'),spImg=document.getElementById('ann-sp-img');if(logoUrl&&sp&&spImg){spImg.src=logoUrl;sp.classList.add('on');}else if(sp){sp.classList.remove('on');if(spImg)spImg.src='';}el.classList.remove('out');el.classList.add('on');clearTimeout(_annTimer);_annTimer=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.classList.remove('on','out'),600);},4000);}
 function _subColor(s){
   if(!s)return'';
