@@ -510,6 +510,12 @@
       color: rgba(210,210,240,.5);
       border-color: rgba(255,255,255,.1);
     }
+    .rsb-badge-det {
+      font-weight: 400;
+      letter-spacing: .03em;
+      text-transform: none;
+      opacity: .72;
+    }
 
     .page {
       display: none;
@@ -5686,17 +5692,42 @@
       const pi = Math.max(0, Math.min(S.period || 0, periods.length - 1));
       const periodLabel = periods[pi] || '—';
       const isLive = S.gameStatus === 'LIVE';
-      const overlays = [];
-      if (S.reactionWall?.active) overlays.push('React Wall');
-      if (S.timelineOv?.active)   overlays.push('Timeline');
-      if (S.commBreak?.active)    overlays.push('Interval');
-      if (S.selfieWall?.active)   overlays.push('Selfie Wall');
-      if (S.videoPlaying)         overlays.push('Video Feed');
-      if (S.lBug?.visible)        overlays.push('Corner Bug');
-      if (S.showScoreBug)         overlays.push('Score Bug');
-      const badgesHTML = overlays.length
-        ? overlays.map(b => `<span class="rsb-badge">${b}</span>`).join('')
+
+      const trunc = (s, n) => s && s.length > n ? s.slice(0, n) + '…' : (s || '');
+      const badge = (lbl, det) => `<span class="rsb-badge">${lbl}${det ? `<span class="rsb-badge-det"> · ${det}</span>` : ''}</span>`;
+
+      const items = [];
+      if (S.videoPlaying) {
+        let src = '';
+        try { src = new URL(S.videoSource).hostname; } catch { src = S.videoSource ? 'stream' : ''; }
+        items.push(badge('Live Video', src));
+      }
+      if (S.adScheduleActive && S.adScheduleCurrent >= 0) {
+        const ad = (S.adSchedule || [])[S.adScheduleCurrent];
+        if (ad) {
+          const tp = ad.type === 'video' ? 'Video Ad' : ad.type === 'image' ? 'Image Ad' : 'Ad';
+          const tot = (S.adSchedule || []).length;
+          items.push(badge(tp, trunc(ad.label, 18) + ` (${S.adScheduleCurrent + 1}/${tot})`));
+        }
+      }
+      if (S.commBreak?.active)          items.push(badge('Break', trunc(S.commBreak.label, 20)));
+      if (S.reactionWall?.active)       items.push(badge('React Wall'));
+      if (S.selfieWall?.active)         items.push(badge('Selfie Cam'));
+      if (S.poll?.active)               items.push(badge('Live Poll', trunc(S.poll.question, 22)));
+      if (S.pollResultsOverlay?.active) items.push(badge('Poll Results'));
+      if (S.qrOverlay?.active)          items.push(badge('QR Code', trunc(S.qrOverlay.headline, 18)));
+      if (S.timelineOv?.active)         items.push(badge('Timeline'));
+      if (S.showScoreBug)               items.push(badge('Score Bug'));
+      if (S.lBug?.visible)              items.push(badge('Corner Bug'));
+      if (S.announcement)               items.push(badge('Ticker', trunc(S.announcement, 22)));
+      if (S.papare?.visible)            items.push(badge('Papare'));
+      if (S.lCard?.visible)             items.push(badge('L-Card'));
+      if (S.playerIntro)                items.push(badge('Player Intro', trunc(S.playerIntro.name, 16)));
+
+      const badgesHTML = items.length
+        ? items.join('')
         : `<span class="rsb-badge dim">Nothing active</span>`;
+
       el.innerHTML = `
         <div class="rsb-score-bug">
           <div class="rsb-bug-team home">${S.homeTeam || 'Home'}</div>
@@ -5720,10 +5751,11 @@
           <span class="rsb-mon-clk" id="rsb-clock">${S.clock || '00:00'}</span>
         </div>
         <div class="rsb-overlays">${badgesHTML}</div>`;
+
       const dot = document.getElementById('rsb-mon-dot');
       if (dot) {
-        dot.style.background = overlays.length ? 'var(--grn)' : 'rgba(255,255,255,.18)';
-        dot.style.animation = overlays.length ? '' : 'none';
+        dot.style.background = items.length ? 'var(--grn)' : 'rgba(255,255,255,.18)';
+        dot.style.animation = items.length ? '' : 'none';
       }
     }
 
