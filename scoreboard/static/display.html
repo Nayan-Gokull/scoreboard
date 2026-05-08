@@ -187,6 +187,14 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .intro-div{width:100px;height:2px;background:var(--gold);margin:18px auto;}
 .intro-stat{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;}
 
+/* ── reaction wall QR widget ── */
+#rw-qr-widget{position:fixed;bottom:165px;left:16px;z-index:44;display:none;flex-direction:column;align-items:center;gap:7px;background:rgba(6,6,18,.9);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px 10px;backdrop-filter:blur(8px);}
+#rw-qr-widget.on{display:flex;}
+.rw-ql{font-family:'Rajdhani',sans-serif;font-size:.6rem;letter-spacing:.28em;color:rgba(255,255,255,.38);text-transform:uppercase;}
+.rw-qr-box{background:#fff;padding:7px;border-radius:6px;line-height:0;}
+.rw-qr-emojis{font-size:.95rem;letter-spacing:3px;}
+.rw-qr-scan{font-family:'Rajdhani',sans-serif;font-size:.58rem;letter-spacing:.14em;color:rgba(255,255,255,.28);}
+
 /* ── reaction wall floating emojis ── */
 #react-wall{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden;}
 .react-float{position:absolute;bottom:-80px;line-height:1;animation:react-rise var(--dur,3.5s) cubic-bezier(.25,.46,.45,.94) forwards;pointer-events:none;will-change:transform,opacity;}
@@ -756,6 +764,13 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 <div id="sinbin-widget"></div>
 
 <!-- Player intro overlay -->
+<div id="rw-qr-widget">
+  <div class="rw-ql">REACT LIVE</div>
+  <div class="rw-qr-box" id="rw-qr-box"></div>
+  <div class="rw-qr-emojis" id="rw-qr-emojis">🔥🏉👏</div>
+  <div class="rw-qr-scan">Scan to react</div>
+</div>
+
 <div id="react-wall"></div>
 
 <div id="tl-ov">
@@ -891,6 +906,7 @@ function apply(s){
   if(s.playerIntro&&s.playerIntro.seq!==_prev.introSeq){_prev.introSeq=s.playerIntro.seq;showIntro(s.playerIntro);}
   _lastState=s;renderSinBinWidget(s);renderCommBreak(s);renderTimelineOv(s);
   connectReactWall(!!(s.reactionWall&&s.reactionWall.active));
+  renderReactWallQR(s);
   handleSched(s);
   switchScreen(s.gameStatus);
   applyScreens(s);
@@ -1000,6 +1016,25 @@ function showIntro(p){
 setInterval(()=>{if(_lastState){renderSinBinWidget(_lastState);renderCommBreak(_lastState);}},1000);
 
 // ── REACTION WALL ──────────────────────────────────────────────────────────
+let _rwQrKey='';
+function renderReactWallQR(s){
+  const rw=s.reactionWall||{};
+  const widget=document.getElementById('rw-qr-widget');if(!widget)return;
+  if(!rw.active||!rw.qrUrl){widget.classList.remove('on');return;}
+  widget.classList.add('on');
+  const emojiEl=document.getElementById('rw-qr-emojis');
+  if(emojiEl)emojiEl.textContent=(rw.emojis||[]).join('');
+  const key=rw.qrUrl;
+  if(key!==_rwQrKey){
+    _rwQrKey=key;
+    const box=document.getElementById('rw-qr-box');
+    if(box){
+      box.innerHTML='';
+      try{new QRCode(box,{text:rw.qrUrl,width:120,height:120,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});}catch(_){}
+    }
+  }
+}
+
 let _reactEs=null,_reactReconnect=null;
 function connectReactWall(active){
   if(!active){
