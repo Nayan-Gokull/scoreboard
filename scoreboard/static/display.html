@@ -1125,13 +1125,26 @@ function connectReactWall(active){
     _reactReconnect=setTimeout(()=>{if(_lastState?.reactionWall?.active)connectReactWall(true);},3000);
   };
 }
+function _rwPanelMaxPct(){
+  // When the overlay is active, keep emojis inside the score panel (left of sidebar)
+  const rwOv=document.getElementById('rw-ov');
+  if(rwOv&&rwOv.classList.contains('on')){
+    const sidebar=rwOv.querySelector('.rw-sidebar');
+    if(sidebar){
+      const sidebarW=sidebar.offsetWidth||290;
+      return Math.max(40,((window.innerWidth-sidebarW-20)/window.innerWidth)*100);
+    }
+  }
+  return 84; // full screen when overlay not active
+}
 function spawnReactFloat(emoji,leftPct){
   const wall=document.getElementById('react-wall');if(!wall)return;
   const el=document.createElement('div');
   el.className='react-float';
   el.textContent=emoji;
   const sz=(2.8+Math.random()*1.8).toFixed(1);
-  const left=(leftPct!==undefined?leftPct:(8+Math.random()*84)).toFixed(1);
+  const maxPct=_rwPanelMaxPct();
+  const left=(leftPct!==undefined?Math.min(leftPct,maxPct):(5+Math.random()*(maxPct-5))).toFixed(1);
   const dur=(3.2+Math.random()*2).toFixed(2);
   const rot=((Math.random()-.5)*18).toFixed(1);
   el.style.cssText=`left:${left}%;font-size:${sz}rem;--dur:${dur}s;--rot:${rot}deg;`;
@@ -1140,12 +1153,14 @@ function spawnReactFloat(emoji,leftPct){
 }
 function _rwScoreBurst(emojis,side){
   const pool=[...emojis,'🔥','🔥'];
-  const baseLeft=side==='home'?15:55;
+  const maxPct=_rwPanelMaxPct();
+  const range=maxPct*0.4; // each team gets ~40% of the panel width
+  const baseLeft=side==='home'?5:maxPct-range;
   const count=6;
   for(let i=0;i<count;i++){
     setTimeout(()=>{
       const emoji=pool[Math.floor(Math.random()*pool.length)];
-      const left=baseLeft+(Math.random()*30);
+      const left=baseLeft+(Math.random()*range);
       spawnReactFloat(emoji,left);
     },i*80);
   }
