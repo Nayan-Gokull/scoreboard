@@ -355,7 +355,7 @@
       font-size: .57rem;
       letter-spacing: .22em;
       text-transform: uppercase;
-      color: rgba(210,210,240,.3);
+      color: rgba(210,210,240,.5);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -473,7 +473,7 @@
       font-size: .6rem;
       letter-spacing: .1em;
       text-transform: uppercase;
-      color: rgba(210,210,240,.3);
+      color: rgba(210,210,240,.52);
     }
     .rsb-mon-val {
       font-family: 'Rajdhani', sans-serif;
@@ -507,8 +507,8 @@
     }
     .rsb-badge.dim {
       background: rgba(255,255,255,.04);
-      color: rgba(210,210,240,.3);
-      border-color: rgba(255,255,255,.07);
+      color: rgba(210,210,240,.5);
+      border-color: rgba(255,255,255,.1);
     }
 
     .page {
@@ -5721,8 +5721,10 @@
         </div>
         <div class="rsb-overlays">${badgesHTML}</div>`;
       const dot = document.getElementById('rsb-mon-dot');
-      if (dot) dot.style.background = overlays.length ? 'var(--grn)' : 'rgba(255,255,255,.18)';
-      dot.style.animation = overlays.length ? '' : 'none';
+      if (dot) {
+        dot.style.background = overlays.length ? 'var(--grn)' : 'rgba(255,255,255,.18)';
+        dot.style.animation = overlays.length ? '' : 'none';
+      }
     }
 
     // ── INIT ────────────────────────────────────────────────────────────────────
@@ -5733,6 +5735,8 @@
       if (localStorage.getItem('rsb-open') === '0') document.getElementById('rsb').classList.add('collapsed');
       // Sync theme toggle UI with current theme (already applied by inline script)
       _syncThemeUI(document.documentElement.getAttribute('data-theme') || 'dark');
+      // Initial RSB monitor render — shows placeholder data until first SSE push
+      renderRSBMonitor();
     })();
   </script>
 </body>
