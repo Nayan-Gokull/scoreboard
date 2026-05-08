@@ -2292,7 +2292,30 @@
       color: rgba(12,12,50,.7);
     }
     [data-theme="light"] .btn-gh:hover { background: rgba(0,0,0,.09); }
-    [data-theme="light"] .badge-ft { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.1); }
+    /* Away team buttons — ghost-blue becomes solid in light mode */
+    [data-theme="light"] .btn-blu {
+      background: linear-gradient(135deg, #5c6ef0, #3b47d9);
+      color: #fff;
+      border: none;
+      box-shadow: 0 3px 12px rgba(59,71,217,.22);
+    }
+    [data-theme="light"] .btn-blu:hover {
+      background: linear-gradient(135deg, #6b78f5, #4a56e4);
+      box-shadow: 0 5px 18px rgba(59,71,217,.32);
+    }
+    /* Sidebar footer items */
+    [data-theme="light"] .logout-btn { color: var(--red); border-color: rgba(185,28,28,.3); background: rgba(185,28,28,.05); }
+    [data-theme="light"] .pt.admin-color span { color: var(--pur); }
+    /* Game control state badges */
+    [data-theme="light"] .badge-setup { background: rgba(124,88,0,.1);   border-color: rgba(124,88,0,.32); }
+    [data-theme="light"] .badge-live  { background: rgba(21,128,61,.1);  border-color: rgba(21,128,61,.32); }
+    [data-theme="light"] .badge-ht    { background: rgba(59,71,217,.1);  color: #3b47d9; border-color: rgba(59,71,217,.3); }
+    [data-theme="light"] .badge-ideal { background: rgba(109,40,217,.1); color: var(--pur); border-color: rgba(109,40,217,.3); }
+    [data-theme="light"] .badge-final { background: rgba(185,28,28,.1);  color: var(--red); border-color: rgba(185,28,28,.3); }
+    [data-theme="light"] .badge-ft    { background: rgba(0,0,0,.05); color: var(--dim); border-color: rgba(0,0,0,.1); }
+    /* Game control state buttons */
+    [data-theme="light"] .gcs-btn.gcs-active { background: rgba(124,88,0,.1);  border-color: rgba(124,88,0,.4); }
+    [data-theme="light"] .gcs-btn.gcs-live   { background: rgba(21,128,61,.1); border-color: rgba(21,128,61,.4); }
     [data-theme="light"] .poll-bar-track { background: rgba(0,0,0,.08); }
     [data-theme="light"] .ub { background: rgba(167,139,250,.08); }
     [data-theme="light"] .upw { border-color: rgba(0,0,0,.12); background: rgba(0,0,0,.03); }
@@ -4692,7 +4715,7 @@
       if (!S.events || !S.events.length) { log.innerHTML = '<div class="ev-empty">No events yet.</div>'; renderRSBTimeline(); return; }
       log.innerHTML = [...S.events].reverse().map(ev => {
         const playerLabel = ev.type === 'sub'
-          ? [ev.player && `<span style="color:#4caf50;">↑ ${ev.player}</span>`, ev.playerOff && `<span style="color:#f44336;">↓ ${ev.playerOff}</span>`].filter(Boolean).join(' <span style="opacity:.35">/</span> ') || ev.team || '—'
+          ? [ev.player && `<span style="color:var(--home);">↑ ${ev.player}</span>`, ev.playerOff && `<span style="color:var(--red);">↓ ${ev.playerOff}</span>`].filter(Boolean).join(' <span style="opacity:.35">/</span> ') || ev.team || '—'
           : (ev.player || ev.team || '—');
         return `<div class="ev-i"><div class="ev-t">${ev.time || '—'}</div><div class="ev-ic">${EICO[ev.type] || '📋'}</div><div class="ev-b"><div class="ev-m">${playerLabel}</div><div class="ev-s">${ev.type.toUpperCase()} · ${ev.team} · ${ev.score || ''}</div></div><div class="ev-x" onclick="delEv(${ev.id})">✕</div></div>`;
       }).join('');
