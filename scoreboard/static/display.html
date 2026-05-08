@@ -197,7 +197,9 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .rw-bug-team.h{align-items:flex-end;}
 .rw-bug-team.a{align-items:flex-start;}
 .rw-bug-name{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.08em;color:#fff;}
-.rw-bug-score{font-family:'Orbitron',monospace;font-weight:900;font-size:4.8rem;color:#fff;line-height:1;}
+.rw-bug-score{font-family:'Orbitron',monospace;font-weight:900;font-size:4.8rem;color:#fff;line-height:1;transition:color .3s;}
+.rw-bug-score.scored{animation:rw-score-pop .65s cubic-bezier(.22,1,.36,1);}
+@keyframes rw-score-pop{0%{transform:scale(1);color:#fff;}25%{transform:scale(1.42);color:#facc15;text-shadow:0 0 60px rgba(245,200,66,.7);}70%{transform:scale(1.12);color:#facc15;}100%{transform:scale(1);color:#fff;}}
 .rw-bug-center{display:flex;flex-direction:column;align-items:center;gap:6px;}
 .rw-bug-dash{font-family:'Orbitron',monospace;font-weight:700;font-size:2rem;color:rgba(255,255,255,.18);}
 .rw-bug-clock{font-family:'Orbitron',monospace;font-size:.85rem;color:rgba(255,255,255,.35);letter-spacing:.08em;}
@@ -1055,19 +1057,30 @@ function showIntro(p){
 setInterval(()=>{if(_lastState){renderSinBinWidget(_lastState);renderCommBreak(_lastState);}},1000);
 
 // ── REACTION WALL ──────────────────────────────────────────────────────────
-let _rwQrKey='';
+let _rwQrKey='',_rwPrevH=-1,_rwPrevA=-1;
+function _rwScorePop(el){
+  el.classList.remove('scored');
+  void el.offsetWidth;
+  el.classList.add('scored');
+  el.addEventListener('animationend',()=>el.classList.remove('scored'),{once:true});
+}
 function renderReactWallOv(s){
   const rw=s.reactionWall||{};
   const ov=document.getElementById('rw-ov');if(!ov)return;
-  if(!rw.active||!rw.qrUrl){ov.classList.remove('on');return;}
+  if(!rw.active||!rw.qrUrl){ov.classList.remove('on');_rwPrevH=-1;_rwPrevA=-1;return;}
   ov.classList.add('on');
   // Score bug
   const cfg=getCfg(s);
   const pi=Math.max(0,Math.min(s.period||0,cfg.periods.length-1));
+  const newH=s.homeScore??0,newA=s.awayScore??0;
   document.getElementById('rw-hname').textContent=s.homeTeam||'Home';
   document.getElementById('rw-aname').textContent=s.awayTeam||'Away';
-  document.getElementById('rw-hscore').textContent=s.homeScore??0;
-  document.getElementById('rw-ascore').textContent=s.awayScore??0;
+  const hEl=document.getElementById('rw-hscore'),aEl=document.getElementById('rw-ascore');
+  hEl.textContent=newH; aEl.textContent=newA;
+  // Animate + burst on score change
+  if(_rwPrevH>=0&&newH>_rwPrevH){_rwScorePop(hEl);_rwScoreBurst(rw.emojis||['🔥'],'home');}
+  if(_rwPrevA>=0&&newA>_rwPrevA){_rwScorePop(aEl);_rwScoreBurst(rw.emojis||['🔥'],'away');}
+  _rwPrevH=newH;_rwPrevA=newA;
   document.getElementById('rw-clock').textContent=s.clock||'00:00';
   document.getElementById('rw-period').textContent=cfg.periods[pi]||'';
   // Emojis
@@ -1100,18 +1113,30 @@ function connectReactWall(active){
     _reactReconnect=setTimeout(()=>{if(_lastState?.reactionWall?.active)connectReactWall(true);},3000);
   };
 }
-function spawnReactFloat(emoji){
+function spawnReactFloat(emoji,leftPct){
   const wall=document.getElementById('react-wall');if(!wall)return;
   const el=document.createElement('div');
   el.className='react-float';
   el.textContent=emoji;
   const sz=(2.8+Math.random()*1.8).toFixed(1);
-  const left=(8+Math.random()*84).toFixed(1);
+  const left=(leftPct!==undefined?leftPct:(8+Math.random()*84)).toFixed(1);
   const dur=(3.2+Math.random()*2).toFixed(2);
   const rot=((Math.random()-.5)*18).toFixed(1);
   el.style.cssText=`left:${left}%;font-size:${sz}rem;--dur:${dur}s;--rot:${rot}deg;`;
   wall.appendChild(el);
   el.addEventListener('animationend',()=>el.remove(),{once:true});
+}
+function _rwScoreBurst(emojis,side){
+  const pool=[...emojis,'🔥','🔥'];
+  const baseLeft=side==='home'?15:55;
+  const count=6;
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      const emoji=pool[Math.floor(Math.random()*pool.length)];
+      const left=baseLeft+(Math.random()*30);
+      spawnReactFloat(emoji,left);
+    },i*80);
+  }
 }
 
 const TL_ICONS={try:'🏉',conversion:'✅',conversion_miss:'❌',penalty_goal:'🎯',drop_goal:'⬇️',penalty_try:'⚡',yellowcard:'🟨',redcard:'🟥',goal:'⚽',owngoal:'⚽'};
