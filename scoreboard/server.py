@@ -125,7 +125,7 @@ DEFAULT_STATE = {
     "poll": {"active": False, "question": "", "options": [], "votes": {}, "seq": 0},
     "pollResultsOverlay": {"active": False, "seq": 0},
     "selfieWall": {"active": False, "qrUrl": "", "seq": 0, "requireApproval": False, "sponsorLogo": ""},
-    "reactionWall": {"active": False, "emojis": ["🔥", "🏉", "👏", "🎉", "💪"], "qrUrl": ""},
+    "reactionWall": {"active": False, "emojis": ["🔥", "🏉", "👏", "🎉", "💪"], "qrUrl": "", "sponsorLogo": ""},
     "gameCode": "", "requireGameCode": True,
 }
 

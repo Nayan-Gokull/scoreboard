@@ -213,7 +213,10 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .rw-qr-wrap{background:#fff;padding:12px;border-radius:8px;line-height:0;}
 .rw-qr-wrap canvas,.rw-qr-wrap img{display:block;}
 .rw-scan{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.22em;color:rgba(255,255,255,.3);text-transform:uppercase;text-align:center;}
-.rw-emoji-row{font-size:1.5rem;letter-spacing:6px;opacity:.55;}
+.rw-emoji-row{font-size:1.3rem;letter-spacing:3px;opacity:.55;white-space:nowrap;}
+.rw-sponsor{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:4px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07);width:100%;}
+.rw-sp-lbl{font-family:'Rajdhani',sans-serif;font-size:.55rem;letter-spacing:.28em;color:rgba(255,255,255,.22);text-transform:uppercase;}
+.rw-sp-img{max-height:36px;max-width:160px;object-fit:contain;filter:brightness(0) invert(1);opacity:.55;}
 
 /* ── reaction wall floating emojis ── */
 #react-wall{position:fixed;inset:0;z-index:234;pointer-events:none;overflow:hidden;}
@@ -809,6 +812,10 @@ body.lc-on #vbg{bottom:28%;left:30%;}
     <div class="rw-qr-wrap" id="rw-qr-box"></div>
     <div class="rw-scan">Scan with your phone</div>
     <div class="rw-emoji-row" id="rw-emoji-row">🔥🏉👏🎉💪</div>
+    <div class="rw-sponsor" id="rw-sponsor" style="display:none;">
+      <div class="rw-sp-lbl">POWERED BY</div>
+      <img class="rw-sp-img" id="rw-sp-img" src="" alt="">
+    </div>
   </div>
 </div>
 
@@ -882,6 +889,7 @@ setInterval(()=>{
   const bclk=document.getElementById('b-clk');if(bclk)bclk.textContent=txt;
   const idclk=document.getElementById('id-clk');if(idclk)idclk.textContent=txt;
   const aclk=document.getElementById('adb-clk');if(aclk)aclk.textContent=txt;
+  const rwclk=document.getElementById('rw-clock');if(rwclk)rwclk.textContent=txt;
 },500);
 
 function apply(s){
@@ -1086,6 +1094,10 @@ function renderReactWallOv(s){
   // Emojis
   const emojiEl=document.getElementById('rw-emoji-row');
   if(emojiEl)emojiEl.textContent=(rw.emojis||[]).join('');
+  // Sponsor
+  const spEl=document.getElementById('rw-sponsor'),spImg=document.getElementById('rw-sp-img');
+  if(spEl&&spImg){if(rw.sponsorLogo){spImg.src=rw.sponsorLogo;spEl.style.display='flex';}else{spEl.style.display='none';spImg.src='';}}
+
   // QR (only rebuild when URL changes)
   const key=rw.qrUrl;
   if(key!==_rwQrKey){

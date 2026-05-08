@@ -3098,6 +3098,15 @@
           <div class="ct">Emojis <span style="font-size:.7rem;font-weight:400;color:var(--dim);margin-left:5px;">— tap to enable / disable</span></div>
           <div class="qg" style="flex-wrap:wrap;" id="rw-emoji-grid"></div>
         </div>
+        <div class="card">
+          <div class="ct">Sponsor Logo <span style="font-size:.7rem;font-weight:400;color:var(--dim);margin-left:5px;">— shown at bottom of display sidebar</span></div>
+          <div class="upw" style="height:64px;" id="rw-sp-up">
+            <input type="file" accept="image/*" onchange="uploadRwSponsor(this)">
+            <div class="ui">🏢</div>
+            <div class="uh">Upload sponsor logo</div>
+            <button class="cb" onclick="clearRwSponsor(event)">✕</button>
+          </div>
+        </div>
       </div>
 
       <!-- ══ USERS (Admin only) ══ -->
@@ -3355,7 +3364,7 @@
       pollResultsOverlay: { active: false, seq: 0 },
       selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false, sponsorLogo: '' },
       commBreak: { active: false, duration: 600, startWall: 0, label: 'HALF TIME' },
-      reactionWall: { active: false, emojis: ['🔥','🏉','👏','🎉','💪'], qrUrl: '' },
+      reactionWall: { active: false, emojis: ['🔥','🏉','👏','🎉','💪'], qrUrl: '', sponsorLogo: '' },
       timelineOv: { active: false },
     };
     let S = Object.assign({}, DEF);
@@ -3989,6 +3998,21 @@
       S.reactionWall.active = false;
       await save(); renderRwStatus(); toast('Reaction wall stopped');
     }
+    async function uploadRwSponsor(input) {
+      const file = input.files[0]; if (!file) return;
+      const url = await uploadToServer('sponsors', file.name, file); if (!url) return;
+      if (!S.reactionWall) S.reactionWall = {};
+      S.reactionWall.sponsorLogo = url;
+      showUploadPreview('rw-sp-up', url, false, file.name);
+      await save(); toast('Reaction wall sponsor set');
+    }
+    async function clearRwSponsor(e) {
+      e.stopPropagation();
+      if (!S.reactionWall) S.reactionWall = {};
+      S.reactionWall.sponsorLogo = '';
+      resetWrap('rw-sp-up');
+      await save(); toast('Sponsor cleared');
+    }
     function renderRwStatus() {
       const el = document.getElementById('rw-status'); if (!el) return;
       const on = !!(S.reactionWall?.active);
@@ -3997,6 +4021,8 @@
       buildRwEmojiGrid();
       const urlInp = document.getElementById('rw-qr-url');
       if (urlInp && S.reactionWall?.qrUrl && !urlInp.value) urlInp.value = S.reactionWall.qrUrl;
+      const spLogo = S.reactionWall?.sponsorLogo;
+      if (spLogo) showUploadPreview('rw-sp-up', spLogo, false, '');
     }
 
     // ── MATCH TIMELINE ─────────────────────────────────────────────────────────
