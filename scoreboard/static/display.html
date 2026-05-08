@@ -187,16 +187,34 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .intro-div{width:100px;height:2px;background:var(--gold);margin:18px auto;}
 .intro-stat{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;}
 
-/* ── reaction wall QR widget ── */
-#rw-qr-widget{position:fixed;bottom:165px;left:16px;z-index:44;display:none;flex-direction:column;align-items:center;gap:7px;background:rgba(6,6,18,.9);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px 10px;backdrop-filter:blur(8px);}
-#rw-qr-widget.on{display:flex;}
-.rw-ql{font-family:'Rajdhani',sans-serif;font-size:.6rem;letter-spacing:.28em;color:rgba(255,255,255,.38);text-transform:uppercase;}
-.rw-qr-box{background:#fff;padding:7px;border-radius:6px;line-height:0;}
-.rw-qr-emojis{font-size:.95rem;letter-spacing:3px;}
-.rw-qr-scan{font-family:'Rajdhani',sans-serif;font-size:.58rem;letter-spacing:.14em;color:rgba(255,255,255,.28);}
+/* ── reaction wall overlay ── */
+#rw-ov{position:fixed;inset:0;z-index:233;display:flex;opacity:0;pointer-events:none;transition:opacity .6s ease;background:#030308;}
+#rw-ov.on{opacity:1;pointer-events:all;}
+.rw-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:40px;}
+.rw-main::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 55%,rgba(245,200,66,.055) 0%,transparent 70%);pointer-events:none;}
+.rw-scorebug{display:flex;align-items:center;gap:28px;margin-bottom:44px;position:relative;z-index:1;}
+.rw-bug-team{display:flex;flex-direction:column;align-items:center;gap:6px;width:160px;}
+.rw-bug-team.h{align-items:flex-end;}
+.rw-bug-team.a{align-items:flex-start;}
+.rw-bug-name{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:.08em;color:#fff;}
+.rw-bug-score{font-family:'Orbitron',monospace;font-weight:900;font-size:4.8rem;color:#fff;line-height:1;}
+.rw-bug-center{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.rw-bug-dash{font-family:'Orbitron',monospace;font-weight:700;font-size:2rem;color:rgba(255,255,255,.18);}
+.rw-bug-clock{font-family:'Orbitron',monospace;font-size:.85rem;color:rgba(255,255,255,.35);letter-spacing:.08em;}
+.rw-bug-period{font-family:'Rajdhani',sans-serif;font-size:.7rem;letter-spacing:.22em;color:rgba(255,255,255,.25);text-transform:uppercase;}
+.rw-prompt{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.18em;color:rgba(255,255,255,.18);position:relative;z-index:1;}
+
+/* ── reaction wall sidebar ── */
+.rw-sidebar{width:290px;flex-shrink:0;background:rgba(4,4,16,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:36px 28px;border-left:1px solid rgba(255,255,255,.06);}
+.rw-eyebrow{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.42em;color:var(--gold);}
+.rw-cta{font-family:'Bebas Neue',sans-serif;font-size:2.1rem;letter-spacing:.07em;text-align:center;line-height:1.12;color:#fff;}
+.rw-qr-wrap{background:#fff;padding:12px;border-radius:8px;line-height:0;}
+.rw-qr-wrap canvas,.rw-qr-wrap img{display:block;}
+.rw-scan{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.22em;color:rgba(255,255,255,.3);text-transform:uppercase;text-align:center;}
+.rw-emoji-row{font-size:1.5rem;letter-spacing:6px;opacity:.55;}
 
 /* ── reaction wall floating emojis ── */
-#react-wall{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden;}
+#react-wall{position:fixed;inset:0;z-index:234;pointer-events:none;overflow:hidden;}
 .react-float{position:absolute;bottom:-80px;line-height:1;animation:react-rise var(--dur,3.5s) cubic-bezier(.25,.46,.45,.94) forwards;pointer-events:none;will-change:transform,opacity;}
 @keyframes react-rise{0%{transform:translateY(0) scale(1) rotate(var(--rot,0deg));opacity:1;}60%{opacity:.9;}100%{transform:translateY(calc(-105vh)) scale(.5) rotate(calc(var(--rot,0deg)*3));opacity:0;}}
 
@@ -764,11 +782,32 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 <div id="sinbin-widget"></div>
 
 <!-- Player intro overlay -->
-<div id="rw-qr-widget">
-  <div class="rw-ql">REACT LIVE</div>
-  <div class="rw-qr-box" id="rw-qr-box"></div>
-  <div class="rw-qr-emojis" id="rw-qr-emojis">🔥🏉👏</div>
-  <div class="rw-qr-scan">Scan to react</div>
+<div id="rw-ov">
+  <div class="rw-main">
+    <div class="rw-scorebug">
+      <div class="rw-bug-team h">
+        <div class="rw-bug-name" id="rw-hname">Home</div>
+        <div class="rw-bug-score" id="rw-hscore">0</div>
+      </div>
+      <div class="rw-bug-center">
+        <div class="rw-bug-dash">—</div>
+        <div class="rw-bug-clock" id="rw-clock">00:00</div>
+        <div class="rw-bug-period" id="rw-period">—</div>
+      </div>
+      <div class="rw-bug-team a">
+        <div class="rw-bug-name" id="rw-aname">Away</div>
+        <div class="rw-bug-score" id="rw-ascore">0</div>
+      </div>
+    </div>
+    <div class="rw-prompt">REACT AS THE ACTION HAPPENS</div>
+  </div>
+  <div class="rw-sidebar">
+    <div class="rw-eyebrow">REACT LIVE</div>
+    <div class="rw-cta">TAP YOUR<br>REACTION!</div>
+    <div class="rw-qr-wrap" id="rw-qr-box"></div>
+    <div class="rw-scan">Scan with your phone</div>
+    <div class="rw-emoji-row" id="rw-emoji-row">🔥🏉👏🎉💪</div>
+  </div>
 </div>
 
 <div id="react-wall"></div>
@@ -906,7 +945,7 @@ function apply(s){
   if(s.playerIntro&&s.playerIntro.seq!==_prev.introSeq){_prev.introSeq=s.playerIntro.seq;showIntro(s.playerIntro);}
   _lastState=s;renderSinBinWidget(s);renderCommBreak(s);renderTimelineOv(s);
   connectReactWall(!!(s.reactionWall&&s.reactionWall.active));
-  renderReactWallQR(s);
+  renderReactWallOv(s);
   handleSched(s);
   switchScreen(s.gameStatus);
   applyScreens(s);
@@ -1017,20 +1056,31 @@ setInterval(()=>{if(_lastState){renderSinBinWidget(_lastState);renderCommBreak(_
 
 // ── REACTION WALL ──────────────────────────────────────────────────────────
 let _rwQrKey='';
-function renderReactWallQR(s){
+function renderReactWallOv(s){
   const rw=s.reactionWall||{};
-  const widget=document.getElementById('rw-qr-widget');if(!widget)return;
-  if(!rw.active||!rw.qrUrl){widget.classList.remove('on');return;}
-  widget.classList.add('on');
-  const emojiEl=document.getElementById('rw-qr-emojis');
+  const ov=document.getElementById('rw-ov');if(!ov)return;
+  if(!rw.active||!rw.qrUrl){ov.classList.remove('on');return;}
+  ov.classList.add('on');
+  // Score bug
+  const cfg=getCfg(s);
+  const pi=Math.max(0,Math.min(s.period||0,cfg.periods.length-1));
+  document.getElementById('rw-hname').textContent=s.homeTeam||'Home';
+  document.getElementById('rw-aname').textContent=s.awayTeam||'Away';
+  document.getElementById('rw-hscore').textContent=s.homeScore??0;
+  document.getElementById('rw-ascore').textContent=s.awayScore??0;
+  document.getElementById('rw-clock').textContent=s.clock||'00:00';
+  document.getElementById('rw-period').textContent=cfg.periods[pi]||'';
+  // Emojis
+  const emojiEl=document.getElementById('rw-emoji-row');
   if(emojiEl)emojiEl.textContent=(rw.emojis||[]).join('');
+  // QR (only rebuild when URL changes)
   const key=rw.qrUrl;
   if(key!==_rwQrKey){
     _rwQrKey=key;
     const box=document.getElementById('rw-qr-box');
     if(box){
       box.innerHTML='';
-      try{new QRCode(box,{text:rw.qrUrl,width:120,height:120,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});}catch(_){}
+      try{new QRCode(box,{text:rw.qrUrl,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});}catch(_){}
     }
   }
 }
