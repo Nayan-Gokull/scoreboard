@@ -187,6 +187,11 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 .intro-div{width:100px;height:2px;background:var(--gold);margin:18px auto;}
 .intro-stat{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.88rem;letter-spacing:.2em;color:rgba(255,255,255,.5);text-transform:uppercase;}
 
+/* ── reaction wall floating emojis ── */
+#react-wall{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden;}
+.react-float{position:absolute;bottom:-80px;line-height:1;animation:react-rise var(--dur,3.5s) cubic-bezier(.25,.46,.45,.94) forwards;pointer-events:none;will-change:transform,opacity;}
+@keyframes react-rise{0%{transform:translateY(0) scale(1) rotate(var(--rot,0deg));opacity:1;}60%{opacity:.9;}100%{transform:translateY(calc(-105vh)) scale(.5) rotate(calc(var(--rot,0deg)*3));opacity:0;}}
+
 /* ── match timeline overlay ── */
 #tl-ov{display:none;position:fixed;inset:0;z-index:185;background:rgba(4,4,14,.97);backdrop-filter:blur(20px);flex-direction:column;align-items:center;padding:32px 48px 28px;overflow:hidden;}
 #tl-ov.on{display:flex;animation:cel-in .45s cubic-bezier(.22,1,.36,1) both;}
@@ -751,6 +756,8 @@ body.lc-on #vbg{bottom:28%;left:30%;}
 <div id="sinbin-widget"></div>
 
 <!-- Player intro overlay -->
+<div id="react-wall"></div>
+
 <div id="tl-ov">
   <div class="tl-eyebrow">MATCH REVIEW</div>
   <div class="tl-title">STORY SO FAR</div>
@@ -883,6 +890,7 @@ function apply(s){
   if(s.vadSeq&&s.vadSeq!==_prev.vadSeq){_prev.vadSeq=s.vadSeq;if(s.vadCmd==='show'&&s.vadUrl)showVAd(s.vadUrl,s.vadType||'image',s.vadDuration||15);else if(s.vadCmd==='hide')closeVAd();}
   if(s.playerIntro&&s.playerIntro.seq!==_prev.introSeq){_prev.introSeq=s.playerIntro.seq;showIntro(s.playerIntro);}
   _lastState=s;renderSinBinWidget(s);renderCommBreak(s);renderTimelineOv(s);
+  connectReactWall(!!(s.reactionWall&&s.reactionWall.active));
   handleSched(s);
   switchScreen(s.gameStatus);
   applyScreens(s);
@@ -990,6 +998,36 @@ function showIntro(p){
   _introTimer=setTimeout(()=>{ov.classList.add('out');setTimeout(()=>ov.classList.remove('on','out'),500);},(p.duration||6)*1000);
 }
 setInterval(()=>{if(_lastState){renderSinBinWidget(_lastState);renderCommBreak(_lastState);}},1000);
+
+// ── REACTION WALL ──────────────────────────────────────────────────────────
+let _reactEs=null,_reactReconnect=null;
+function connectReactWall(active){
+  if(!active){
+    if(_reactEs){_reactEs.close();_reactEs=null;}
+    clearTimeout(_reactReconnect);
+    return;
+  }
+  if(_reactEs)return;
+  _reactEs=new EventSource('/api/react/stream');
+  _reactEs.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.emoji)spawnReactFloat(d.emoji);}catch{}};
+  _reactEs.onerror=()=>{
+    _reactEs.close();_reactEs=null;
+    _reactReconnect=setTimeout(()=>{if(_lastState?.reactionWall?.active)connectReactWall(true);},3000);
+  };
+}
+function spawnReactFloat(emoji){
+  const wall=document.getElementById('react-wall');if(!wall)return;
+  const el=document.createElement('div');
+  el.className='react-float';
+  el.textContent=emoji;
+  const sz=(2.8+Math.random()*1.8).toFixed(1);
+  const left=(8+Math.random()*84).toFixed(1);
+  const dur=(3.2+Math.random()*2).toFixed(2);
+  const rot=((Math.random()-.5)*18).toFixed(1);
+  el.style.cssText=`left:${left}%;font-size:${sz}rem;--dur:${dur}s;--rot:${rot}deg;`;
+  wall.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove(),{once:true});
+}
 
 const TL_ICONS={try:'🏉',conversion:'✅',conversion_miss:'❌',penalty_goal:'🎯',drop_goal:'⬇️',penalty_try:'⚡',yellowcard:'🟨',redcard:'🟥',goal:'⚽',owngoal:'⚽'};
 const TL_LABELS={try:'Try',conversion:'Conv',conversion_miss:'Miss',penalty_goal:'Pen Goal',drop_goal:'Drop Goal',penalty_try:'Pen Try',yellowcard:'Yellow Card',redcard:'Red Card',goal:'Goal',owngoal:'Own Goal'};

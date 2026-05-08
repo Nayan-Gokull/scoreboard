@@ -2538,6 +2538,26 @@
           <div id="tl-status" style="font-size:.74rem;color:var(--dim);margin-top:7px;">Hidden</div>
         </div>
         <div class="card">
+          <div class="ct">😄 Emoji Reaction Wall</div>
+          <div style="font-size:.74rem;color:var(--dim);margin-bottom:10px;line-height:1.5;">Fans tap emojis on their phones — they float up live on the display. Share the QR code so fans can join.</div>
+          <div class="fg" style="margin-bottom:9px;">
+            <label>Emojis (tap to toggle)</label>
+            <div class="qg" style="flex-wrap:wrap;" id="rw-emoji-grid"></div>
+          </div>
+          <div class="fg" style="margin-bottom:9px;">
+            <label>Fan Page URL</label>
+            <div style="display:flex;gap:7px;">
+              <input type="text" id="rw-qr-url" placeholder="Auto: your-server/react" style="flex:1;" oninput="if(!S.reactionWall)S.reactionWall={};S.reactionWall.qrUrl=this.value;">
+              <button class="btn btn-gh btn-sm" onclick="rwSetDefaultUrl()">Auto</button>
+            </div>
+          </div>
+          <div class="qg" style="margin-bottom:9px;">
+            <button class="btn btn-acc" style="flex:1;" id="rw-start-btn" onclick="startReactionWall()">▶ Go Live</button>
+            <button class="btn btn-gh" onclick="stopReactionWall()">■ Stop</button>
+          </div>
+          <div id="rw-status" style="font-size:.74rem;color:var(--dim);">Inactive</div>
+        </div>
+        <div class="card">
           <div class="ct">📺 Player Intro Broadcast</div>
           <div class="qg">
             <button class="btn btn-acc" style="position:relative;flex:1;" onclick="openIntroModal()">📺 Broadcast Player Intro<span class="key-badge">I</span></button>
@@ -3329,6 +3349,7 @@
       pollResultsOverlay: { active: false, seq: 0 },
       selfieWall: { active: false, qrUrl: '', seq: 0, requireApproval: false, sponsorLogo: '' },
       commBreak: { active: false, duration: 600, startWall: 0, label: 'HALF TIME' },
+      reactionWall: { active: false, emojis: ['🔥','🏉','👏','🎉','💪'], qrUrl: '' },
       timelineOv: { active: false },
     };
     let S = Object.assign({}, DEF);
@@ -3717,6 +3738,7 @@
       renderCBStatus();
       if (S.commBreak?.active && !_cbStatusIv) _startCBStatusTick();
       renderTLStatus();
+      renderRwStatus();
     }
 
     // ── UNDO ───────────────────────────────────────────────────────────────────
@@ -3923,6 +3945,52 @@
       await pushState(); toast(`Intro: ${name}`);
     }
     async function clearIntro() { S.playerIntro = null; await pushState(); toast('Intro cleared'); }
+
+    // ── REACTION WALL ──────────────────────────────────────────────────────────
+    const RW_ALL_EMOJIS = ['🔥','🏉','👏','🎉','💪','😮','⚡','🙌','❤️','🫡'];
+    function buildRwEmojiGrid() {
+      const grid = document.getElementById('rw-emoji-grid'); if (!grid) return;
+      const active = (S.reactionWall?.emojis) || ['🔥','🏉','👏','🎉','💪'];
+      grid.innerHTML = RW_ALL_EMOJIS.map(e => {
+        const on = active.includes(e);
+        return `<button class="btn btn-sm ${on?'btn-acc':'btn-gh'}" style="font-size:1.2rem;padding:5px 10px;" onclick="rwToggleEmoji('${e}')">${e}</button>`;
+      }).join('');
+    }
+    function rwToggleEmoji(e) {
+      if (!S.reactionWall) S.reactionWall = { active: false, emojis: ['🔥','🏉','👏','🎉','💪'], qrUrl: '' };
+      const idx = S.reactionWall.emojis.indexOf(e);
+      if (idx >= 0) S.reactionWall.emojis.splice(idx, 1);
+      else S.reactionWall.emojis.push(e);
+      buildRwEmojiGrid();
+      save();
+    }
+    function rwSetDefaultUrl() {
+      const url = window.location.origin + '/react';
+      if (!S.reactionWall) S.reactionWall = { active: false, emojis: [], qrUrl: '' };
+      S.reactionWall.qrUrl = url;
+      const inp = document.getElementById('rw-qr-url'); if (inp) inp.value = url;
+      save();
+    }
+    async function startReactionWall() {
+      if (!S.reactionWall) S.reactionWall = { active: false, emojis: ['🔥','🏉','👏','🎉','💪'], qrUrl: '' };
+      if (!S.reactionWall.qrUrl) rwSetDefaultUrl();
+      S.reactionWall.active = true;
+      await save(); renderRwStatus(); toast('Reaction wall live!');
+    }
+    async function stopReactionWall() {
+      if (!S.reactionWall) S.reactionWall = { active: false, emojis: [], qrUrl: '' };
+      S.reactionWall.active = false;
+      await save(); renderRwStatus(); toast('Reaction wall stopped');
+    }
+    function renderRwStatus() {
+      const el = document.getElementById('rw-status'); if (!el) return;
+      const on = !!(S.reactionWall?.active);
+      el.textContent = on ? `LIVE — fans can react at ${S.reactionWall?.qrUrl || '/react'}` : 'Inactive';
+      el.style.color = on ? '#4ade80' : 'var(--dim)';
+      buildRwEmojiGrid();
+      const urlInp = document.getElementById('rw-qr-url');
+      if (urlInp && S.reactionWall?.qrUrl && !urlInp.value) urlInp.value = S.reactionWall.qrUrl;
+    }
 
     // ── MATCH TIMELINE ─────────────────────────────────────────────────────────
     async function showTimeline() { S.timelineOv = { active: true }; await pushState(); renderTLStatus(); toast('Timeline shown'); }

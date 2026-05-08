@@ -125,6 +125,7 @@ DEFAULT_STATE = {
     "poll": {"active": False, "question": "", "options": [], "votes": {}, "seq": 0},
     "pollResultsOverlay": {"active": False, "seq": 0},
     "selfieWall": {"active": False, "qrUrl": "", "seq": 0, "requireApproval": False, "sponsorLogo": ""},
+    "reactionWall": {"active": False, "emojis": ["🔥", "🏉", "👏", "🎉", "💪"], "qrUrl": ""},
     "gameCode": "", "requireGameCode": True,
 }
 
@@ -421,6 +422,22 @@ def _rl_clear(ip: str):
 sse_clients = []
 sse_lock = threading.Lock()
 
+react_clients = []
+react_lock = threading.Lock()
+
+def react_broadcast(emoji):
+    msg = f'data: {json.dumps({"emoji": emoji})}\n\n'.encode()
+    with react_lock:
+        dead = []
+        for q in react_clients:
+            try:
+                q.put_nowait(msg)
+            except Exception:
+                dead.append(q)
+        for d in dead:
+            if d in react_clients:
+                react_clients.remove(d)
+
 def sse_broadcast_state():
     """Push current state.json to all connected SSE clients."""
     try:
@@ -636,6 +653,19 @@ class Handler(BaseHTTPRequestHandler):
             return self._serve_static("poll.html")
         if path == "/selfie":
             return self._serve_static("selfie.html")
+        if path == "/react":
+            return self._serve_static("react.html")
+        if path == "/api/react/stream":
+            return self._handle_react_sse()
+        if path == "/api/react/status":
+            st = load_state()
+            rw = st.get("reactionWall", {})
+            return self._send_json({
+                "active": bool(rw.get("active")),
+                "emojis": rw.get("emojis", ["🔥","🏉","👏","🎉","💪"]),
+                "matchName": f"{st.get('homeTeam','Home')} vs {st.get('awayTeam','Away')}",
+                "status": st.get("gameStatus",""),
+            })
         if path == "/api/selfie/list":
             selfie_dir = MEDIA / "selfies"
             files = sorted(selfie_dir.glob("*.jpg"), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -748,6 +778,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._handle_logout()
         if path == "/api/poll/vote":
             return self._handle_poll_vote()
+        if path == "/api/react":
+            return self._handle_react_post()
         if path == "/api/selfie/upload":
             return self._handle_selfie_upload()
 
@@ -852,6 +884,58 @@ class Handler(BaseHTTPRequestHandler):
         save_state(st)
         sse_broadcast_state()
         return self._send_json({"ok": True, "votes": votes})
+
+    def _handle_react_post(self):
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+        try:
+            data = json.loads(body)
+        except Exception:
+            return self._error("Bad JSON", 400)
+        emoji = str(data.get("emoji", "")).strip()
+        if not emoji:
+            return self._error("Missing emoji", 400)
+        # Only accept if wall is active
+        st = load_state()
+        rw = st.get("reactionWall", {})
+        if not rw.get("active"):
+            return self._send_json({"ok": False, "reason": "inactive"})
+        allowed = rw.get("emojis", [])
+        if allowed and emoji not in allowed:
+            return self._send_json({"ok": False, "reason": "not allowed"})
+        react_broadcast(emoji)
+        return self._send_json({"ok": True})
+
+    def _handle_react_sse(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        q_obj = queue.Queue(maxsize=200)
+        with react_lock:
+            react_clients.append(q_obj)
+        _BROKEN = (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)
+        try:
+            while True:
+                try:
+                    msg = q_obj.get(timeout=20)
+                    self.wfile.write(msg)
+                    self.wfile.flush()
+                except queue.Empty:
+                    try:
+                        self.wfile.write(b": ping\n\n")
+                        self.wfile.flush()
+                    except _BROKEN:
+                        break
+                except _BROKEN:
+                    break
+        finally:
+            with react_lock:
+                if q_obj in react_clients:
+                    react_clients.remove(q_obj)
 
     def _handle_poll_reset(self):
         st = load_state()
